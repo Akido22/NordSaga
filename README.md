@@ -20,7 +20,7 @@
 ## План перехода
 
 0. Решения и репозиторий ✔
-1. Каркас: настройки экрана, Input Map, папки, autoload (`Data`, `GameState`, `SaveSystem`, `Audio`)
+1. Каркас: настройки экрана, Input Map, папки, autoload (`Data`, `GameState`, `SaveSystem`, `Audio`) ✔
 2. Перенос ресурсов из Pyxel: тайлы, постройки, иконки, шрифт, звуки, TOML → JSON
 3. Герой и движение — ощущение как в Pyxel
 4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган
@@ -34,9 +34,41 @@
 ## Структура
 
 ```
-scenes/    player, enemies, bosses, levels, ui, props
-scripts/   autoload, combat, ai
-data/      баланс (TOML и собранный JSON)
-assets/    sprites, tiles, fonts, audio
+scenes/    player, enemies, bosses, levels, ui, props, debug
+scripts/   autoload, combat, ai; palette.gd — 16 цветов (класс Pal)
+data/      баланс (TOML и собранный JSON в data/json)
+assets/    sprites, tiles, fonts, audio/sfx, audio/music
+tests/     автопроверки
 tools/     конвертеры
 ```
+
+Глобальные скрипты (autoload):
+
+| | |
+|---|---|
+| `Controls` | действия ввода: клавиатура (физические клавиши — WASD работает и на русской раскладке) и геймпад |
+| `Data` | таблицы баланса из `data/json` |
+| `GameState` | состояние похода: сума, здоровье, сундуки, флаги |
+| `SaveSystem` | сохранение `user://save.json`, формат v2 как в Pyxel-версии |
+| `Audio` | звуки и музыка, M — вкл/выкл музыку |
+
+## Управление
+
+| Действие | Клавиатура | Геймпад |
+|---|---|---|
+| Движение | стрелки / WASD | крестовина / левый стик |
+| Прыжок | Пробел / Z / K | A |
+| Удар | X / J | X |
+| Блок | C / L | RB |
+| Кувырок | V / Shift / ; | B |
+| Лечение | Q / H | LB |
+| Чары / смена руны | F / U, E / O | Y, левый стик (нажатие) |
+| Сума / пауза | I / Tab, Esc / P | Back, Start |
+
+## Проверка
+
+```
+godot --headless --path . res://tests/smoke_test.tscn
+```
+Печатает `SMOKE OK`. Пока главная сцена — `scenes/debug/input_test.tscn`:
+по F5 видно экран, палитру и подсветку нажатых действий.

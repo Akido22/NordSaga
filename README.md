@@ -26,7 +26,7 @@
 4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган ✔
 5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр ✔
 6. Враги и ярл Хрёрек ✔
-7. Прокачка, руны, жители, лавки, кузница
+7. Прокачка, руны, жители, лавки, кузница ✔
 8. Интерфейс и сохранение — полное прохождение
 9. Android: экранное управление, экспорт APK
 10. Новая графика
@@ -40,7 +40,9 @@ scripts/   autoload; physics (TileBody — тайловая физика); world
            objects (объекты уровня); enemies (Enemy; Wolf, Draugr, ShieldDraugr, Archer + Arrow,
            JarlBoss + Shockwave, Dummy; Looks — облики врагов);
            characters (HumanoidLook — гуманоид из слоёв);
-           ui (UiKit — панели и текст, hud); shaders (перекраска по палитре);
+           magic (Spells — действие рун, Fireball); ui (UiKit, HudLayer, MenuList, окна Overlay:
+           NpcMenu, TradeMenu, RestMenu); shaders (перекраска по палитре);
+           inventory.gd (Inventory — сума, снаряжение, уровень, заточка, руны), items.gd (Items),
            palette.gd (Pal), strips.gd (Strips — анимации из лент), icons.gd (Icons)
 data/      баланс (TOML и собранный JSON в data/json), levels/*.txt — карты из Pyxel-версии
 assets/    tiles, sprites (characters, objects, props, icons), backgrounds, fonts, audio/sfx, audio/music
@@ -54,7 +56,7 @@ tools/     конвертеры
 |---|---|
 | `Controls` | действия ввода: клавиатура (физические клавиши — WASD работает и на русской раскладке) и геймпад |
 | `Data` | таблицы баланса из `data/json` |
-| `GameState` | состояние похода: сума, здоровье, сундуки, флаги |
+| `GameState` | состояние похода: сума (`inv`), здоровье, сундуки, флаги |
 | `SaveSystem` | сохранение `user://save.json`, формат v2 как в Pyxel-версии |
 | `Audio` | звуки и музыка, M — вкл/выкл музыку |
 
@@ -127,6 +129,7 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 | Чары / смена руны | F / U, E / O | Y, левый стик (нажатие) |
 | Сума / пауза | I / Tab, Esc / P | Back, Start |
 | Открыть, говорить, войти | ↑ / W | крестовина вверх |
+| В окнах: выбор / назад | Enter / Пробел / Z, Esc / Backspace / X | A, B |
 
 ## Проверка
 
@@ -136,6 +139,7 @@ godot --headless --path . res://tests/movement_test.tscn
 godot --headless --path . res://tests/levels_test.tscn
 godot --headless --path . res://tests/combat_test.tscn
 godot --headless --path . res://tests/enemies_test.tscn
+godot --headless --path . res://tests/progress_test.tscn
 ```
 - `smoke_test` — настройки, ввод, сохранение, ресурсы (`SMOKE OK`).
 - `movement_test` — движение героя кадр в кадр против Pyxel-версии
@@ -149,18 +153,25 @@ godot --headless --path . res://tests/enemies_test.tscn
   драугром, драугром со щитом, лучником, стаей и бой с ярлом до победы (обе
   фазы, волки, ударные волны) — герой, каждый враг и снаряды (`ENEMIES OK`).
   Эталон: `python tests/reference/make_enemies_reference.py D:/путь/к/NordSagePixel`.
+- `progress_test` — 600 случайных операций с сумой, лавками, кузней, опытом и
+  очками, и бой чарами и припасами кадр в кадр против Pyxel-версии (`PROGRESS OK`).
+  Эталоны: `python tests/reference/make_progress_reference.py D:/путь/к/NordSagePixel`.
 - `levels_test` — тайлы сцен совпадают с картами, сундук, стела, табличка,
   разговор, монета, переходы город → тропа → курган → тропа → город (`LEVELS OK`).
 
 Снимок любой сцены (без `--headless`), можно с удержанием действий:
 ```
 godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shot.png --scene=res://scenes/world/world.tscn --level=arena --equip=weapon:sword,shield:shield_red --hold=block --frames=30
+godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shop.png --scene=res://scenes/game.tscn --silver=120 --give=ore:3 --overlay=trade:smith:2
 ```
 
 Главная сцена (F5) — `scenes/game.tscn`: новая игра в Велеграде. Работают сундуки,
 стела и рунные камни (сохранение), таблички, разговоры, монеты, переходы между
 локациями, весь бой героя, враги на «Лесной тропе» и в кургане, ярл Хрёрек
-(арена с решёткой, ярость и волки, награда после победы), добыча и опыт с убитых.
+(арена с решёткой, ярость и волки, награда после победы), добыча и опыт с убитых,
+чары рун (F — сотворить, E — сменить руну), припасы (Q), отдых у стелы и камней
+с распределением очков, торговцы (Торвальд, Млада, кузнец Добрыня) с лавками и
+заточкой оружия. Окна сумы и снаряжения пока нет — шаг 8.
 Чучела — у тренера в Велеграде и на «Ристалище» (`scenes/levels/arena.tscn`, F6).
 Погибший пока встаёт на старте (экран смерти — шаг 8).
 `scenes/debug/input_test.tscn` — проверка ввода.

@@ -1,6 +1,7 @@
+class_name HudLayer
 extends CanvasLayer
-## Экранный слой мира: жизнь, выносливость, мана, серебро, сообщения, название
-## локации, табличка, разговор. Полный интерфейс (руны, припасы, уровень) — шаг 8.
+## Экранный слой мира: жизнь, выносливость, мана, серебро, припасы, уровень, руна,
+## сообщения, название локации, полоса босса, табличка, разговор.
 
 var world: World
 var _canvas: Node2D
@@ -88,8 +89,13 @@ static func bar(c: CanvasItem, r: Rect2, value: float, max_value: float, col: Co
 
 
 func _draw_stats(c: CanvasItem, p: Player) -> void:
-	c.draw_rect(Rect2(2, 2, 150, 42), Pal.BLACK)
-	c.draw_rect(Rect2(2.5, 2.5, 149, 41), Pal.DARK_WOOD, false, 1.0)
+	var inv := GameState.inv
+	c.draw_rect(Rect2(2, 2, 150, 44), Pal.BLACK)
+	c.draw_rect(Rect2(2.5, 2.5, 149, 43), Pal.DARK_WOOD, false, 1.0)
+	var need := Inventory.xp_needed(inv.level)
+	c.draw_rect(Rect2(3, 43, int(148.0 * inv.xp / need), 1), Pal.GOLD)
+	var lvl_col := Pal.GOLD if inv.points and (world.t / 15) % 2 else Pal.STEEL
+	UiKit.text(c, 116, 31, "УР.%d%s" % [inv.level, "+" if inv.points else ""], lvl_col)
 	c.draw_texture(Icons.texture("heart"), Vector2(5, 4))
 	bar(c, Rect2(24, 6, 86, 8), GameState.hp, GameState.max_hp(), Pal.RED)
 	UiKit.text(c, 114, 5, "%d/%d" % [GameState.hp, GameState.max_hp()], Pal.LINEN)
@@ -98,4 +104,22 @@ func _draw_stats(c: CanvasItem, p: Player) -> void:
 	bar(c, Rect2(24, 23, 86, 5), p.mana, GameState.max_mana(), Pal.FJORD, false)
 	UiKit.text(c, 114, 20, str(int(p.mana)), Pal.FJORD)
 	c.draw_texture(Icons.texture("coin"), Vector2(5, 27))
-	UiKit.text(c, 24, 31, str(int(GameState.inventory.get("silver", 0))), Pal.LINEN)
+	UiKit.text(c, 24, 31, str(inv.silver), Pal.LINEN)
+	var idx := inv.first_consumable()
+	if idx >= 0:
+		var total := 0
+		for i in inv.bag.size():
+			if inv.bag[i] and inv.item_at(i).heal:
+				total += inv.count_at(i)
+		c.draw_texture(Icons.of(inv.item_at(idx)), Vector2(60, 27))
+		UiKit.text(c, 78, 31, "x%d Q" % total, Pal.LINEN)
+	# Выбранная руна.
+	var rune := inv.spell()
+	if rune:
+		var cost := int(Spells.spell(rune).cost)
+		var ready := p.mana >= cost
+		c.draw_rect(Rect2(156, 2, 40, 44), Pal.BLACK)
+		c.draw_rect(Rect2(156.5, 2.5, 39, 43), Pal.FJORD if ready else Pal.DARK_WOOD, false, 1.0)
+		c.draw_texture_rect(Icons.of(Items.get_item(rune)), Rect2(160, 4, 32, 32), false)
+		UiKit.text(c, 160, 35, "F", Pal.FJORD if ready else Pal.STONE)
+		UiKit.text(c, 172, 35, str(cost), Pal.FJORD if ready else Pal.STONE)

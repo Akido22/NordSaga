@@ -4,7 +4,7 @@ extends Node
 
 const START_LEVEL := "town"
 
-var inventory := {}  # до шага 7 — словарь в формате сохранения: equipment, bag…
+var inv: Inventory  # сума, снаряжение, уровень, руны
 var hp := 10
 var collected := {}  # "локация:uid" -> true, подобранные предметы с карты
 var chests := {}  # "локация:uid" -> оставшаяся добыча
@@ -21,8 +21,8 @@ func _ready() -> void:
 
 
 func reset() -> void:
-	inventory = starting_inventory()
-	hp = max_hp()
+	inv = Inventory.starting()
+	hp = inv.max_hp()
 	collected = {}
 	chests = {}
 	save_point = null
@@ -33,120 +33,38 @@ func reset() -> void:
 	pos = null
 
 
-const BAG_SIZE := 24
-const MAX_STACK := 9
-
-
-## Начальная сума (data/progression.toml [start]); формат — как в сохранении.
-func starting_inventory() -> Dictionary:
-	var start: Dictionary = Data.table("progression").get("start", {})
-	inventory = {
-		"equipment": {"weapon": start.get("weapon"), "armor": start.get("armor")},
-		"bag": [], "silver": 0, "spells": [], "level": 1, "xp": 0, "points": 0,
-	}
-	inventory.bag.resize(BAG_SIZE)
-	for pair in start.get("items", []):
-		add_item(pair[0], int(pair[1]))
-	return inventory
-
-
-## Кладёт предмет в суму; false — места нет. Руны не занимают места — запоминаются.
-## (Полная сума и снаряжение — шаг 7.)
-func add_item(id: String, count := 1) -> bool:
-	var it: Dictionary = Data.table("items").get(id, {})
-	if it.get("kind") == "rune":
-		if not id in inventory.spells:
-			inventory.spells.append(id)
-		return true
-	var bag: Array = inventory.bag
-	if it.get("kind") in ["consumable", "material"]:
-		for cell in bag:
-			if cell and cell[0] == id and cell[1] + count <= MAX_STACK:
-				cell[1] += count
-				return true
-	for i in bag.size():
-		if bag[i] == null:
-			bag[i] = [id, count]
-			return true
-	return false
-
-
+# ------------------------------------------------------------ короткие обращения к суме
 ## id надетого предмета в ячейке (weapon, shield, helmet, armor, amulet) или "".
 func equipped(slot: String) -> String:
-	var item = inventory.get("equipment", {}).get(slot)
-	return item if item is String else ""
+	var id = inv.equipment.get(slot)
+	return id if id is String else ""
 
 
-## Сумма поля stat по надетым вещам (hp, atk, defense…).
-func equipment_sum(stat: String) -> int:
-	var total := 0
-	var items: Dictionary = Data.table("items")
-	for slot in inventory.get("equipment", {}):
-		var id := equipped(slot)
-		if id and items.has(id):
-			total += int(items[id].get(stat, 0))
-	return total
+func add_item(id: String, count := 1) -> bool:
+	return inv.add(id, count)
 
 
-## Опыт для перехода с уровня lvl на следующий.
-func xp_needed(lvl: int) -> int:
-	var l: Dictionary = Data.table("progression").levels
-	return int(l.xp_base) + int(l.xp_step) * (lvl - 1)
-
-
-## Начисляет опыт. Возвращает число полученных уровней (очки тратятся у стелы — шаг 7).
-func add_xp(amount: int) -> int:
-	var l: Dictionary = Data.table("progression").levels
-	var inv := inventory
-	var gained := 0
-	inv.xp = int(inv.get("xp", 0)) + amount
-	inv.level = int(inv.get("level", 1))
-	while inv.level < int(l.max_level) and inv.xp >= xp_needed(inv.level):
-		inv.xp -= xp_needed(inv.level)
-		inv.level += 1
-		inv.points = int(inv.get("points", 0)) + int(l.get("points_per_level", 1))
-		gained += 1
-	return gained
-
-
-## Очки прокачки в показателе: str, sta, vit, spi (полная прокачка — шаг 7).
-func stat(id: String) -> int:
-	return int(inventory.get("stats", {}).get(id, 0))
-
-
-## Заточка оружия id: 0..max_upgrade.
-func upgrade_level(id: String) -> int:
-	return int(inventory.get("upgrades", {}).get(id, 0))
-
-
-## Наибольшая жизнь: основа + вещи + очки Живучести.
 func max_hp() -> int:
-	var prog: Dictionary = Data.table("progression")
-	return int(prog.base.hp) + equipment_sum("hp") + stat("vit") * int(prog.stats.vitality)
+	return inv.max_hp()
 
 
-## Атака: основа + вещи + заточка оружия + очки Силы.
 func attack() -> int:
-	var prog: Dictionary = Data.table("progression")
-	var weapon := equipped("weapon")
-	var bonus := upgrade_level(weapon) if weapon else 0
-	return int(prog.base.attack) + equipment_sum("atk") + bonus + stat("str") * int(prog.stats.strength)
+	return inv.attack()
 
 
 func defense() -> int:
-	return int(Data.table("progression").base.defense) + equipment_sum("defense")
+	return inv.defense()
 
 
 func max_stamina() -> int:
-	var prog: Dictionary = Data.table("progression")
-	return int(prog.base.stamina) + stat("sta") * int(prog.stats.endurance)
+	return inv.max_stamina()
 
 
 func max_mana() -> int:
-	var prog: Dictionary = Data.table("progression")
-	return int(prog.base.mana) + stat("spi") * int(prog.stats.spirit)
+	return inv.max_mana()
 
 
+# ------------------------------------------------------------ сохранение
 static func key(level_name: String, uid: String) -> String:
 	return "%s:%s" % [level_name, uid]
 
@@ -160,7 +78,7 @@ func to_save(level_name: String, at: Vector2) -> Dictionary:
 		"level": level_name,
 		"pos": [at.x, at.y],
 		"hp": hp,
-		"inventory": inventory,
+		"inventory": inv.to_dict(),
 		"collected": collected_list,
 		"chests": chests,
 		"save_point": save_point,
@@ -171,11 +89,13 @@ func to_save(level_name: String, at: Vector2) -> Dictionary:
 
 func from_save(data: Dictionary) -> void:
 	reset()
-	inventory = data.get("inventory", inventory)
-	hp = clampi(int(data.get("hp", hp)), 1, max_hp())
+	inv = Inventory.from_dict(data.get("inventory", {}))
+	hp = clampi(int(data.get("hp", hp)), 1, inv.max_hp())
 	for k in data.get("collected", []):
 		collected[k] = true
-	chests = data.get("chests", {})
+	var items: Dictionary = data.get("chests", {})
+	for k in items:
+		chests[k] = Array(items[k]).filter(func(id): return Items.has(id))
 	save_point = data.get("save_point")
 	for f in data.get("flags", []):
 		flags[f] = true

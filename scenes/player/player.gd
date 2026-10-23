@@ -1,7 +1,7 @@
 class_name Player
 extends TileBody
 ## Герой: движение и бой — выносливость, перекат, блок и парирование, серия ударов,
-## тяжёлый удар, удар в падении. Чары — шаг 7.
+## тяжёлый удар, удар в падении, чары рун.
 ## Логика идёт кадрами (tick), как в Pyxel-версии; числа — data/player.toml, x2.
 
 const ACCEL := 0.56
@@ -36,7 +36,7 @@ var input_buffer: int
 var mana_regen: float
 
 var facing := 1
-var state := "move"  # move, attack, charge, plunge, roll, block, stun, recover; шаг 7: cast
+var state := "move"  # move, attack, charge, plunge, roll, block, stun, recover, cast
 var state_t := 0
 var anim_t := 0
 var attack_kind := ""  # light, heavy, air, plunge
@@ -50,7 +50,9 @@ var block_t := 0
 var block_cd := 0
 var stamina := 0.0
 var mana := 0.0
-var shield_t := 0  # щит Перуна (шаг 7)
+var shield_t := 0  # щит Перуна
+var cast_spell := ""
+var buf_cast := 0
 var stamina_wait := 0
 var stamina_flash := 0
 var invuln := 0
@@ -165,9 +167,11 @@ func poll_input() -> void:
 		buf_roll = input_buffer
 	if Controls.pressed("jump"):
 		jump_buf = jump_buffer
+	if Controls.pressed("cast"):
+		buf_cast = input_buffer
 
 
-## Забирает запомненное нажатие ("attack" или "roll").
+## Забирает запомненное нажатие ("attack", "roll" или "cast").
 func _take(buf: String) -> bool:
 	var attr := "buf_" + buf
 	if get(attr) > 0:
@@ -195,7 +199,7 @@ func tick(world) -> void:
 	var direction := Controls.direction()
 
 	call("_st_" + state, world, direction)
-	for timer in ["buf_attack", "buf_roll", "jump_buf"]:
+	for timer in ["buf_attack", "buf_roll", "jump_buf", "buf_cast"]:
 		if get(timer) > 0:
 			set(timer, get(timer) - 1)
 
@@ -270,6 +274,8 @@ func _st_move(world, direction: int) -> void:
 	elif Controls.held("block") and on_ground and block_cd == 0:
 		_to_state("block")
 		block_t = 0
+	elif _take("cast"):
+		_start_cast(world)
 	elif _take("attack"):
 		if can_act():
 			if not on_ground and Controls.held("move_down"):
@@ -277,6 +283,38 @@ func _st_move(world, direction: int) -> void:
 			else:
 				combo = 0
 				_start_attack(world, "light" if on_ground else "air")
+
+
+# --- чары
+func _start_cast(world) -> void:
+	var rune := GameState.inv.spell()
+	if rune == "":
+		world.toast("Ты не знаешь ни одной руны", Pal.STEEL)
+		Audio.sfx("deny")
+		return
+	var sp := Spells.spell(rune)
+	if sp.ground_only and not on_ground:
+		Audio.sfx("deny")
+		return
+	if mana < int(sp.cost):
+		world.toast("Не хватает маны", Pal.FJORD)
+		Audio.sfx("deny")
+		return
+	mana -= int(sp.cost)
+	cast_spell = rune
+	_to_state("cast", int(sp.cast))
+	Audio.sfx("charged")
+
+
+func _st_cast(world, _direction: int) -> void:
+	_brake(0.6 if on_ground else 0.1)
+	if not on_ground:
+		vy = minf(vy, 1.2)  # в воздухе чары чуть замедляют падение
+	state_t -= 1
+	if state_t <= 0:
+		Spells.release(cast_spell, self, world)
+		cast_spell = ""
+		_to_state("move")
 
 
 # --- перекат
@@ -588,6 +626,8 @@ func frame() -> int:
 			return HumanoidLook.anim("heavy", 0)
 		"plunge":
 			return HumanoidLook.anim("plunge")
+		"cast":
+			return HumanoidLook.anim("cast", anim_t / 6)
 		"block":
 			return HumanoidLook.anim("block")
 	if state == "stun" or flash:
@@ -607,7 +647,7 @@ func sync() -> void:
 	var wpn = item("weapon")
 	var charged := state == "charge" and charge >= charge_time and (anim_t / 3) % 2
 	look.show_frame(frame(), facing,
-			null if state == "roll" or dead else wpn,
+			null if state in ["roll", "cast"] or dead else wpn,
 			item("shield") if state != "roll" else null,
 			null, state == "block", flash > 0, {},
 			{"6": "a", "f": "a"} if charged else {})
@@ -621,6 +661,26 @@ func _draw_fx() -> void:
 		_draw_slash(f)
 	if state == "stun" and state_t > 14:
 		_draw_stun_stars()
+	if state == "cast" and cast_spell:
+		var hand := HumanoidLook.anchor(f, "hand", w / 2, h, facing)
+		var r := 2.0 + (anim_t / 3) % 3 * 2
+		var at := hand + Vector2(facing * 4, 0)
+		_fx.draw_circle(at, r, Pal.BY_INDEX[int(Spells.spell(cast_spell).color)])
+		_fx.draw_rect(Rect2(at - Vector2.ONE, Vector2(2, 2)), Pal.SNOW)
+	_draw_shield_aura()
+
+
+## Золотое сияние щита Перуна вокруг героя; к концу мерцает.
+func _draw_shield_aura() -> void:
+	if shield_t <= 0 or (shield_t < 40 and (shield_t / 3) % 2):
+		return
+	var c := Vector2(w / 2, h / 2)
+	_fx.draw_circle(c, 32, Color(Pal.GOLD, 0.25))
+	_fx.draw_arc(c, 32, 0, TAU, 48, Pal.GOLD, 2)
+	var a0 := Engine.get_physics_frames() * 0.08
+	for i in 4:
+		var a := a0 + i * PI / 2
+		_fx.draw_rect(Rect2(c + Vector2(cos(a), sin(a)) * 32 - Vector2.ONE, Vector2(2, 2)), Pal.SNOW)
 
 
 ## Дуга-след за клинком (в локальных координатах героя).

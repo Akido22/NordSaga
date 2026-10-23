@@ -26,7 +26,7 @@ func _ready() -> void:
 	var chest := _find(world.chests, "29,19") as Chest
 	_use(chest)
 	_expect(chest.opened, "сундук не открылся")
-	_expect("rune_fire" in GameState.inventory.spells, "руна огня не выучена")
+	_expect("rune_fire" in GameState.inv.spells, "руна огня не выучена")
 	_expect(_bag_count("honey") == 1, "мёд не в суме")
 
 	# Стела: сохранение.
@@ -57,7 +57,7 @@ func _ready() -> void:
 	world.player.y = coin.y
 	world.player.vy = 0
 	_tick(1)
-	_expect(int(GameState.inventory.silver) == 1 and GameState.collected.has(coin_key), "монета не подобрана")
+	_expect(GameState.inv.silver == 1 and GameState.collected.has(coin_key), "монета не подобрана")
 
 	# Врата тропы -> курган (ярл не побеждён: выход заперт, награда скрыта).
 	var to_barrow := world.gates.filter(func(g): return g.target == "barrow")[0] as Gate
@@ -142,7 +142,7 @@ func _find(list: Array, uid: String) -> LevelObject:
 
 func _bag_count(id: String) -> int:
 	var n := 0
-	for cell in GameState.inventory.bag:
+	for cell in GameState.inv.bag:
 		if cell and cell[0] == id:
 			n += int(cell[1])
 	return n

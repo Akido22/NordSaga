@@ -28,8 +28,8 @@ func _run(c: Dictionary) -> bool:
 	GameState.reset()
 	GameState.spawn = null
 	for slot in c.equip:
-		GameState.inventory.equipment[slot] = c.equip[slot]
-	GameState.inventory["stats"] = {"str": 0, "sta": 0, "vit": int(c.vit), "spi": 0}
+		GameState.inv.equipment[slot] = c.equip[slot]
+	GameState.inv.stats.vit = int(c.vit)
 	GameState.hp = GameState.max_hp()
 	var world: World = load("res://scenes/world/world.tscn").instantiate()
 	var path: String = c.level

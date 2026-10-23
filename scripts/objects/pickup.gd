@@ -49,7 +49,7 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO)
 	else:
 		var it: Dictionary = _item()
-		draw_texture(Icons.texture(it.get("icon", kind)), Vector2(0, bob))
+		draw_texture(Icons.of(it) if it else Icons.texture(kind), Vector2(0, bob))
 		if (age / 10) % 6 == 0:
 			draw_rect(Rect2(12, bob + 2, 2, 2), Pal.SNOW)
 
@@ -57,4 +57,4 @@ func _draw() -> void:
 func _item() -> Dictionary:
 	if Engine.is_editor_hint():
 		return {}
-	return Data.table("items").get(kind, {})
+	return Items.get_item(kind) if Items.has(kind) else {}

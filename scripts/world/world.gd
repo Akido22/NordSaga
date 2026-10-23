@@ -5,6 +5,8 @@ extends Node2D
 ## взаимодействие -> частицы -> камера.
 
 signal exit_requested(target: String, spawn: String)
+## Открыть окно поверх игры: "rest" (камень/стела) или "npc" (меню торговца).
+signal ui_requested(kind: String, target: Node)
 
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
@@ -62,6 +64,7 @@ var toasts := []  # [текст, цвет, жизнь]
 var texts := []  # всплывающие надписи [x, y, текст, цвет, жизнь]
 var exit_to = null
 var finished := false
+var ui_request = null  # [вид, объект] — окно, которое надо открыть после кадра
 
 var _overlay: Node2D  # подсказки и надписи в мире — поверх всего
 
@@ -226,6 +229,10 @@ func tick() -> void:
 		shake_t -= 1
 	cam += (_target_cam() - cam) * CAM_LERP
 	_sync()
+	if ui_request != null:
+		var req = ui_request
+		ui_request = null
+		ui_requested.emit(req[0], req[1])
 
 
 func _interactions() -> void:
@@ -241,6 +248,13 @@ func _interactions() -> void:
 			best = d
 	if near != null and Controls.pressed("move_up"):
 		near.interact(self)
+	if Controls.pressed("heal"):
+		use_heal_item()
+	if Controls.pressed("next_rune"):
+		var rune := GameState.inv.next_spell()
+		if rune:
+			toast("Руна: " + Items.get_item(rune).name, Pal.FJORD)
+			Audio.sfx("move")
 	for ex in edge_exits:
 		if exit_to == null and ex.overlaps(p.x, p.y, p.w, p.h):
 			leave(ex.target, ex.spawn)
@@ -324,10 +338,10 @@ func drop(kind: String, x: float, y: float, vx: float, vy: float) -> void:
 
 
 func gain_xp(amount: int, x: float, y: float) -> void:
-	var levels := GameState.add_xp(amount)
+	var levels := GameState.inv.add_xp(amount)
 	float_text(x, y - 20, "+%d опыта" % amount, Pal.MOSS)
 	if levels:
-		toast("Новый уровень: %d! Поклонись Стеле или камню" % GameState.inventory.level, Pal.GOLD)
+		toast("Новый уровень: %d! Поклонись Стеле или камню" % GameState.inv.level, Pal.GOLD)
 		Audio.sfx("save")
 
 
@@ -407,7 +421,7 @@ func sparks(x: float, y: float, n := 6) -> void:
 
 func collect(pk: Pickup) -> void:
 	if pk.kind == "coin":
-		GameState.inventory.silver = int(GameState.inventory.get("silver", 0)) + 1
+		GameState.inv.silver += 1
 		Audio.sfx("coin")
 	else:
 		if not GameState.add_item(pk.kind):
@@ -428,7 +442,36 @@ func activate_save_point(sp: SavePoint) -> void:
 		o.refresh()
 	GameState.save_point = key(sp.uid)
 	GameState.hp = GameState.max_hp()
+	player.mana = GameState.max_mana()
 	save_game()
+	ui_request = ["rest", sp]
+
+
+## Съесть самый слабый лечащий припас (Q).
+func use_heal_item() -> void:
+	var inv := GameState.inv
+	if GameState.hp >= inv.max_hp():
+		toast("Ты и так полон сил", Pal.STEEL)
+		Audio.sfx("deny")
+		return
+	var idx := inv.first_consumable()
+	if idx < 0:
+		toast("В суме нет припасов", Pal.STEEL)
+		Audio.sfx("deny")
+		return
+	var it := inv.item_at(idx)
+	var healed := player.heal(int(it.heal))
+	inv.remove_at(idx)
+	float_text(player.cx, player.y - 8, "+%d" % healed, Pal.MOSS)
+	toast("%s: +%d" % [it.name, healed], Pal.MOSS)
+	Audio.sfx("heal")
+
+
+## Начать или продолжить разговор с жителем.
+func start_talk(npc: Npc) -> void:
+	npc.talk()
+	talk_npc = npc if npc.talking else null
+	Audio.sfx("move")
 
 
 func save_game() -> bool:

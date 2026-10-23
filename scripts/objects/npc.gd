@@ -2,7 +2,7 @@
 class_name Npc
 extends LevelObject
 ## Житель: облик и реплики — data/npcs.toml. Поворачивается к подошедшему герою.
-## Торговля — шаг 7; пока житель только говорит.
+## Торговец (поле shop) сначала открывает меню: говорить, торговать, ковать.
 
 @export var npc_id := "elder"
 
@@ -71,13 +71,22 @@ func hint() -> String:
 	return "" if talking else "говорить"
 
 
-## Следующая реплика; после последней разговор заканчивается.
+func shop() -> String:
+	return str(data.get("shop", ""))
+
+
 func interact(world) -> void:
+	if shop() and not talking:
+		world.ui_request = ["npc", self]  # меню: говорить / торговать
+	else:
+		world.start_talk(self)
+
+
+## Следующая реплика; после последней разговор заканчивается.
+func talk() -> void:
 	line += 1
 	if line >= lines().size():
 		line = -1
-	world.talk_npc = self if talking else null
-	Audio.sfx("move")
 
 
 func tick(world) -> void:

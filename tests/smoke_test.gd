@@ -6,6 +6,8 @@ extends Node
 ##   [--hold=move_left,jump] [--frames=40]  — держать действия столько кадров перед снимком
 ##   [--level=barrow] [--spawn=entry]  — для сцены мира: какая локация и точка появления
 ##   [--equip=weapon:sword,shield:shield_round]  — надеть вещи перед снимком
+##   [--give=ore:3,sword:1] [--silver=120] [--xp=90]  — выдать вещи, серебро, опыт
+##   [--overlay=rest | npc:merchant | trade:smith:2]  — для game.tscn: открыть окно перед снимком
 
 var failures: Array[String] = []
 
@@ -136,12 +138,17 @@ func _screenshot(path: String) -> void:
 	if packed == null:
 		return
 	for pair in _arg("equip").split(",", false):
-		GameState.inventory.equipment[pair.get_slice(":", 0)] = pair.get_slice(":", 1)
+		GameState.inv.equipment[pair.get_slice(":", 0)] = pair.get_slice(":", 1)
 	var node := packed.instantiate()
 	if node is World and _arg("level"):
 		node.level_name = _arg("level")
 		node.spawn = _arg("spawn")
 	add_child(node)
+	# После add_child: корень игры при запуске начинает новую игру.
+	for pair in _arg("give").split(",", false):
+		GameState.inv.add(pair.get_slice(":", 0), int(pair.get_slice(":", 1)))
+	GameState.inv.silver += int(_arg("silver"))
+	GameState.inv.add_xp(int(_arg("xp")))
 	var hold := {}
 	for a in _arg("hold").split(",", false):
 		hold[a] = true
@@ -150,6 +157,14 @@ func _screenshot(path: String) -> void:
 		# physics_frame приходит до обработки кадра — ввод задаётся для этого же кадра
 		await get_tree().physics_frame
 		Controls.scripted = {"held": hold, "pressed": hold if i == 0 else {}}
+	if _arg("overlay") and node.has_method("open_overlay"):
+		var spec := _arg("overlay").split(":")
+		match spec[0]:
+			"rest": node.open_overlay(RestMenu.new(node.world.save_points[0]))
+			"npc": node.open_overlay(NpcMenu.new(node.world.npcs.filter(func(n): return n.npc_id == spec[1])[0]))
+			"trade": node.open_overlay(TradeMenu.new(spec[1], int(spec[2]) if spec.size() > 2 else 0))
+		for i in 3:
+			await get_tree().physics_frame
 	# Действия держатся до самого снимка, иначе на нём будет уже следующая поза.
 	await RenderingServer.frame_post_draw
 	var err := get_viewport().get_texture().get_image().save_png(path)

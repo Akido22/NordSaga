@@ -82,6 +82,25 @@ func pressed(action: String) -> bool:
 	return Input.is_action_just_pressed(action)
 
 
+## Нажато в этом кадре или держится (для меню): после 14 кадров — повтор каждые 5,
+## как pyxel.btnp(key, 14, 5).
+func pressed_repeat(action: String) -> bool:
+	if scripted != null:
+		return scripted.pressed.has(action)
+	if Input.is_action_just_pressed(action):
+		return true
+	var n: int = _held_frames.get(action, 0)
+	return n >= 14 and (n - 14) % 5 == 0
+
+
+var _held_frames := {}
+
+
+func _physics_process(_delta: float) -> void:
+	for action in ["move_up", "move_down", "move_left", "move_right"]:
+		_held_frames[action] = _held_frames.get(action, 0) + 1 if Input.is_action_pressed(action) else 0
+
+
 ## Направление -1, 0 или 1, как в Pyxel-версии (стик — с мёртвой зоной).
 func direction() -> int:
 	return int(held("move_right")) - int(held("move_left"))

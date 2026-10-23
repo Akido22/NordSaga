@@ -31,6 +31,25 @@ func puff(x: float, y: float) -> void:
 			randi_range(40, 70), [Pal.STONE, Pal.STEEL].pick_random(), 0.0])
 
 
+## Зелёные искры лечения вокруг героя (x, top — середина и верх хитбокса).
+func heal_glow(x: float, top: float) -> void:
+	for i in 14:
+		_parts.append([x + randf_range(-12, 12), top + randf_range(0, 30), randf_range(-0.4, 0.4),
+				randf_range(-2.0, -0.8), randi_range(20, 36), [Pal.MOSS, Pal.PINE, Pal.SNOW].pick_random(), 0.0])
+
+
+## Хвост огненного шара.
+func trail(x: float, y: float, vx: float) -> void:
+	_parts.append([x, y, vx, randf_range(-0.6, 0.6), randi_range(6, 12), [Pal.FIRE, Pal.GOLD, Pal.RED].pick_random(), 0.0])
+
+
+## Взрыв огненного шара.
+func burst(x: float, y: float) -> void:
+	for i in 10:
+		_parts.append([x, y, randf_range(-2.8, 2.8), randf_range(-3.2, 0.8), randi_range(8, 16),
+				[Pal.FIRE, Pal.GOLD, Pal.RED].pick_random(), 0.06])
+
+
 func tick() -> void:
 	for p in _parts:
 		p[0] += p[2]

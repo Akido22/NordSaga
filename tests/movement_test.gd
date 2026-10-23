@@ -16,6 +16,7 @@ func _ready() -> void:
 	GameState.spawn = null
 	world.set_physics_process(false)
 	world.respawn_after_death = false
+	world.spawn_enemies = false
 	add_child(world)
 	var p := world.player
 

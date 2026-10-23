@@ -24,6 +24,14 @@ var flash := 0
 var anim_t := 0
 var stun_t := 0
 var contact_cd := 0
+var _fx: Node2D  # звёздочки оглушения и прочее — поверх облика
+
+
+func _ready() -> void:
+	_fx = Node2D.new()
+	_fx.z_index = 1
+	_fx.draw.connect(_draw_fx)
+	add_child(_fx)
 
 
 ## Числа из data/enemies.toml для вида kind (общие поля).
@@ -162,13 +170,20 @@ func patrol(world, speed: float) -> void:
 func sync() -> void:
 	super.sync()
 	queue_redraw()
+	if _fx:
+		_fx.queue_redraw()
 
 
-## Звёздочки над оглушённым (локальные координаты).
-func draw_status() -> void:
+## Рисование поверх облика (локальные координаты). Переопределяется.
+func _draw_fx() -> void:
+	draw_status(_fx, -12)
+
+
+## Звёздочки над оглушённым; dy — высота над макушкой хитбокса.
+func draw_status(c: CanvasItem, dy: float) -> void:
 	if stun_t > 0:
 		var t := Engine.get_physics_frames()
 		for i in 3:
 			var a := t * 0.15 + i * 2.1
-			draw_rect(Rect2(Vector2(w / 2 + cos(a) * 10, -12 + sin(a) * 3).floor(), Vector2(2, 2)),
+			c.draw_rect(Rect2(Vector2(w / 2 + cos(a) * 10, dy + sin(a) * 3).floor(), Vector2(2, 2)),
 					Pal.GOLD if i % 2 else Pal.SNOW)

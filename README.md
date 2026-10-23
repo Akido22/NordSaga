@@ -25,7 +25,7 @@
 3. Герой и движение — ощущение как в Pyxel ✔
 4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган ✔
 5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр ✔
-6. Враги и ярл Хрёрек
+6. Враги и ярл Хрёрек ✔
 7. Прокачка, руны, жители, лавки, кузница
 8. Интерфейс и сохранение — полное прохождение
 9. Android: экранное управление, экспорт APK
@@ -37,13 +37,14 @@
 scenes/    game.tscn (корень: смена локаций), world, levels (town, test_level, barrow, arena),
            player, enemies, bosses, ui, debug
 scripts/   autoload; physics (TileBody — тайловая физика); world (World, Level, Effects);
-           objects (объекты уровня); enemies (Enemy, Dummy — чучело);
+           objects (объекты уровня); enemies (Enemy; Wolf, Draugr, ShieldDraugr, Archer + Arrow,
+           JarlBoss + Shockwave, Dummy; Looks — облики врагов);
            characters (HumanoidLook — гуманоид из слоёв);
            ui (UiKit — панели и текст, hud); shaders (перекраска по палитре);
            palette.gd (Pal), strips.gd (Strips — анимации из лент), icons.gd (Icons)
 data/      баланс (TOML и собранный JSON в data/json), levels/*.txt — карты из Pyxel-версии
 assets/    tiles, sprites (characters, objects, props, icons), backgrounds, fonts, audio/sfx, audio/music
-tests/     автопроверки
+tests/     автопроверки; levels — площадки для сверки врагов (duel_*)
 tools/     конвертеры
 ```
 
@@ -102,15 +103,16 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 | `Props` | постройки `Prop`: вид и ширина в тайлах |
 | `Objects` | `Chest` (добыча), `SavePoint` (камень/стела), `Sign` (текст), `Gate` (куда и в какую точку), `EdgeExit`, `Pickup` (монета/вещь), `Decor` |
 | `Npcs` | жители `Npc` (id из `data/npcs.toml`) |
-| `Enemies` | метки врагов (сами враги — шаг 6) |
+| `Enemies` | метки врагов `EnemyMarker`: wolf, draugr, shield_draugr, archer, dummy, jarl |
 | `Spawns` | точки появления; `Start` — старт героя |
 
 У корня — название, подзаголовок, фон, музыка, размер в тайлах и описание арены
-босса. Объект ставится на левый нижний угол своего тайла (сетка 16 px).
+босса (`boss`: id, столбец, за которым босс просыпается, решётка, сундук-награда). Объект ставится на левый нижний угол своего тайла (сетка 16 px).
 
 Сцены были собраны из карт Pyxel-версии (`data/levels/*.txt`) импортёром
 `godot --headless --path . res://tools/import_levels.tscn` — **повторный импорт
-затирает правки, сделанные в редакторе.**
+затирает правки, сделанные в редакторе.** Он же собирает площадки тестов
+`tests/levels/*.txt` -> `tests/levels/*.tscn`.
 
 ## Управление
 
@@ -133,6 +135,7 @@ godot --headless --path . res://tests/smoke_test.tscn
 godot --headless --path . res://tests/movement_test.tscn
 godot --headless --path . res://tests/levels_test.tscn
 godot --headless --path . res://tests/combat_test.tscn
+godot --headless --path . res://tests/enemies_test.tscn
 ```
 - `smoke_test` — настройки, ввод, сохранение, ресурсы (`SMOKE OK`).
 - `movement_test` — движение героя кадр в кадр против Pyxel-версии
@@ -142,6 +145,10 @@ godot --headless --path . res://tests/combat_test.tscn
   (`data/levels/arena.txt`): серии ударов, тяжёлый удар, удар в падении,
   перекаты, блок, выносливость до нуля, стоп-кадры (`COMBAT OK`). Эталон:
   `python tests/reference/make_combat_reference.py D:/путь/к/NordSagePixel`.
+- `enemies_test` — враги кадр в кадр против Pyxel-версии: дуэли с волком,
+  драугром, драугром со щитом, лучником, стаей и бой с ярлом до победы (обе
+  фазы, волки, ударные волны) — герой, каждый враг и снаряды (`ENEMIES OK`).
+  Эталон: `python tests/reference/make_enemies_reference.py D:/путь/к/NordSagePixel`.
 - `levels_test` — тайлы сцен совпадают с картами, сундук, стела, табличка,
   разговор, монета, переходы город → тропа → курган → тропа → город (`LEVELS OK`).
 
@@ -152,9 +159,10 @@ godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shot.png --scene=res
 
 Главная сцена (F5) — `scenes/game.tscn`: новая игра в Велеграде. Работают сундуки,
 стела и рунные камни (сохранение), таблички, разговоры, монеты, переходы между
-локациями и весь бой героя; бить пока можно только чучела (у тренера в Велеграде и
-на «Ристалище» — `scenes/levels/arena.tscn`, F6). Враги — шаг 6; погибший
-встаёт на старте.
+локациями, весь бой героя, враги на «Лесной тропе» и в кургане, ярл Хрёрек
+(арена с решёткой, ярость и волки, награда после победы), добыча и опыт с убитых.
+Чучела — у тренера в Велеграде и на «Ристалище» (`scenes/levels/arena.tscn`, F6).
+Погибший пока встаёт на старте (экран смерти — шаг 8).
 `scenes/debug/input_test.tscn` — проверка ввода.
 `scenes/debug/asset_gallery.tscn` (F6 в редакторе) — все перенесённые ресурсы:
 фон с параллаксом, постройки и объекты с анимацией, тайлы, иконки, шрифт.

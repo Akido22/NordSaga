@@ -13,6 +13,7 @@ const BLOCK_ANGLE := 20  # оружие поперёк, когда блок бе
 static var hum := {}  # humanoid.json: кадры, анимации, точки привязки
 static var weapons := {}  # weapons.json: ячейка, хват, порядок
 
+var zoom := 1.0  # крупнее (ярл — x2), низ и середина остаются на месте
 var _layers: Array[Sprite2D] = []
 var _weapon: Sprite2D
 var _front: Node2D  # щит перед собой — поверх слоёв
@@ -95,7 +96,7 @@ func set_look(look: Array) -> void:
 ## weapon_angle: null — угол из кадра; число — свой угол.
 func show_frame(frame: int, facing: int, weapon = null, shield = null, weapon_angle = null,
 		shield_front := false, flash := false, extra := {}, weapon_tint := {}) -> void:
-	scale.x = facing
+	scale = Vector2(facing * zoom, zoom)
 	var cols := int(hum.cols)
 	var region := Rect2((frame % cols) * hum.frame_w, (frame / cols) * hum.frame_h, hum.frame_w, hum.frame_h)
 	for s in _layers:

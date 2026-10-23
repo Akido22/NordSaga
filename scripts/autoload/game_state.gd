@@ -42,7 +42,7 @@ func starting_inventory() -> Dictionary:
 	var start: Dictionary = Data.table("progression").get("start", {})
 	inventory = {
 		"equipment": {"weapon": start.get("weapon"), "armor": start.get("armor")},
-		"bag": [], "silver": 0, "spells": [],
+		"bag": [], "silver": 0, "spells": [], "level": 1, "xp": 0, "points": 0,
 	}
 	inventory.bag.resize(BAG_SIZE)
 	for pair in start.get("items", []):
@@ -86,6 +86,27 @@ func equipment_sum(stat: String) -> int:
 		if id and items.has(id):
 			total += int(items[id].get(stat, 0))
 	return total
+
+
+## Опыт для перехода с уровня lvl на следующий.
+func xp_needed(lvl: int) -> int:
+	var l: Dictionary = Data.table("progression").levels
+	return int(l.xp_base) + int(l.xp_step) * (lvl - 1)
+
+
+## Начисляет опыт. Возвращает число полученных уровней (очки тратятся у стелы — шаг 7).
+func add_xp(amount: int) -> int:
+	var l: Dictionary = Data.table("progression").levels
+	var inv := inventory
+	var gained := 0
+	inv.xp = int(inv.get("xp", 0)) + amount
+	inv.level = int(inv.get("level", 1))
+	while inv.level < int(l.max_level) and inv.xp >= xp_needed(inv.level):
+		inv.xp -= xp_needed(inv.level)
+		inv.level += 1
+		inv.points = int(inv.get("points", 0)) + int(l.get("points_per_level", 1))
+		gained += 1
+	return gained
 
 
 ## Очки прокачки в показателе: str, sta, vit, spi (полная прокачка — шаг 7).

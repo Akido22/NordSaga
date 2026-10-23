@@ -12,14 +12,17 @@ const LEVELS := "res://scenes/levels/%s.tscn"
 const LOOK_AHEAD := 48.0  # камера смотрит вперёд по ходу героя
 const CAM_LERP := 0.12
 const INTERACT_DIST := 28.0
-## Враги, которые уже перенесены (остальные метки ждут шага 6): вид -> сдвиг по x, как в Pyxel (x2).
-const ENEMY_OFFSETS := {"dummy": -2.0}
+## Сдвиг врага по x от левого края тайла метки, как в Pyxel-версии (x2).
+const ENEMY_OFFSETS := {"wolf": -6.0, "draugr": 0.0, "shield_draugr": 0.0, "archer": 0.0, "dummy": -2.0, "jarl": -8.0}
 
+## Имя локации из scenes/levels или полный путь к сцене (тесты).
 @export var level_name := "town"
 ## Точка появления (имя из Spawns); пусто — Start.
 @export var spawn := ""
 ## Пока нет экрана смерти (шаг 8): павший герой встаёт на старте.
 var respawn_after_death := true
+## false — без врагов (сверка одного движения героя).
+var spawn_enemies := true
 
 var t := 0
 var level: Level
@@ -44,6 +47,12 @@ var hitstop := 0  # «стоп-кадр» при сильных попадани
 var shake_t := 0
 var hidden_chest: Chest = null  # награда за босса — появится после победы
 var boss_defeated := false
+var boss: JarlBoss = null
+var arena_trigger := -1.0  # x, за которым босс просыпается; -1 — арены нет
+var arena_door: Array[Vector2i] = []  # тайлы решётки
+var door_drop := 0.0  # 0 — решётка поднята, 1 — опущена
+## Для сверки с Pyxel: состояние детерминированного генератора; -1 — обычный randf().
+var scripted_rng := -1
 
 var near: LevelObject = null  # ближайший объект для взаимодействия
 var talk_npc: Npc = null
@@ -58,7 +67,7 @@ var _overlay: Node2D  # подсказки и надписи в мире — п�
 
 
 func _ready() -> void:
-	level = load(LEVELS % level_name).instantiate()
+	level = load(level_name if level_name.begins_with("res://") else LEVELS % level_name).instantiate()
 	add_child(level)
 	GameState.level = level_name
 	_collect_objects()
@@ -94,6 +103,12 @@ func _ready() -> void:
 func _collect_objects() -> void:
 	var b: Dictionary = level.boss
 	boss_defeated = not b.is_empty() and GameState.flags.has("boss:" + str(b.boss))
+	if not b.is_empty():
+		arena_trigger = int(b.get("arena_trigger", 0)) * Level.TILE
+		var d: Array = b.get("arena_door", [])
+		if d.size() == 3:
+			for ty in range(int(d[1]), int(d[2]) + 1):
+				arena_door.append(Vector2i(int(d[0]), ty))
 	for o in level.objects():
 		if o is Pickup:
 			var uid := "%s%d,%d" % ["o" if o.kind == "coin" else "h", roundi(o.x / Level.TILE), roundi((o.y + o.h) / Level.TILE) - 1]
@@ -127,18 +142,30 @@ func _collect_objects() -> void:
 	props = level.props()
 	npcs = level.npcs()
 	for m in level.enemy_markers():
+		if not spawn_enemies or (m.kind == "jarl" and boss_defeated):
+			continue
 		var e := _make_enemy(m.kind)
-		if e:
-			e.z_index = 9
-			add_child(e)
-			e.place_on_tile(m.tx, m.ty, ENEMY_OFFSETS[m.kind])
-			enemies.append(e)
+		e.z_index = 9
+		add_child(e)
+		e.place_on_tile(m.tx, m.ty, ENEMY_OFFSETS[m.kind])
+		enemies.append(e)
+		if e is JarlBoss:
+			boss = e
+	var door := Node2D.new()
+	door.z_index = 5
+	door.name = "ArenaDoor"
+	door.draw.connect(_draw_arena_door.bind(door))
+	add_child(door)
 
 
 func _make_enemy(kind: String) -> Enemy:
 	match kind:
-		"dummy": return Dummy.new()
-	return null
+		"wolf": return Wolf.new()
+		"draugr": return Draugr.new()
+		"shield_draugr": return ShieldDraugr.new()
+		"archer": return Archer.new()
+		"jarl": return JarlBoss.new()
+	return Dummy.new()
 
 
 func key(uid: String) -> String:
@@ -165,8 +192,12 @@ func tick() -> void:
 		e.queue_free()
 	enemies = enemies.filter(func(e): return not e.dead) + pending_enemies
 	pending_enemies = []
+	var closing := not arena_door.is_empty() and level.blocked.has(arena_door[0])
+	door_drop = minf(1.0, door_drop + 0.08) if closing else maxf(0.0, door_drop - 0.03)
 	for pr in projectiles:
 		pr.tick(self)
+	for pr in projectiles.filter(func(pr): return pr.dead):
+		pr.queue_free()
 	projectiles = projectiles.filter(func(pr): return not pr.dead)
 	for o in props:
 		o.tick(self)
@@ -229,6 +260,9 @@ func _sync() -> void:
 	player.sync()
 	for e in enemies:
 		e.sync()
+	for pr in projectiles:
+		pr.sync()
+	get_node("ArenaDoor").queue_redraw()
 	var jitter := randi_range(-1, 1) * mini(2, shake_t) * 2 if shake_t > 0 else 0
 	camera.position = Vector2(int(cam.x) + jitter, int(cam.y))
 	_overlay.queue_redraw()
@@ -259,10 +293,108 @@ func freeze(frames: int) -> void:
 	hitstop = maxi(hitstop, frames)
 
 
-## Добыча, опыт и прочее — шаг 6–7.
+## Случайное число 0..1. Для сверки с Pyxel — детерминированный генератор (как в эталоне).
+func rand() -> float:
+	if scripted_rng < 0:
+		return randf()
+	scripted_rng = (scripted_rng * 1103515245 + 12345) % 2147483648
+	return scripted_rng / 2147483648.0
+
+
+func add_projectile(pr: Node2D) -> void:
+	add_child(pr)
+	projectiles.append(pr)
+	pr.sync()
+
+
+func smoke(x: float, y: float, n := 12) -> void:
+	effects.smoke(x, y, n)
+
+
+## Вещь или монета, выпавшая из врага: (x, y) — левый верхний угол.
+func drop(kind: String, x: float, y: float, vx: float, vy: float) -> void:
+	var pk := Pickup.new()
+	pk.kind = kind
+	pk.floating = false
+	pk.position = Vector2(x, y + 16)  # узел Pickup стоит на низу своего тайла
+	pk.vx = vx
+	pk.vy = vy
+	add_child(pk)
+	pickups.append(pk)
+
+
+func gain_xp(amount: int, x: float, y: float) -> void:
+	var levels := GameState.add_xp(amount)
+	float_text(x, y - 20, "+%d опыта" % amount, Pal.MOSS)
+	if levels:
+		toast("Новый уровень: %d! Поклонись Стеле или камню" % GameState.inventory.level, Pal.GOLD)
+		Audio.sfx("save")
+
+
 func on_enemy_killed(e: Enemy) -> void:
-	effects.smoke(e.cx, e.cy)
+	smoke(e.cx, e.cy)
 	shake(2)
+	if e.xp:
+		gain_xp(e.xp, e.cx, e.y)
+	if randf() < e.ore_chance:
+		drop("ore", e.cx - 8, e.y, randf_range(-1.6, 1.6), -4.4)
+	for i in randi_range(int(e.silver[0]), int(e.silver[1])):
+		drop("coin", e.cx - 8, e.y, randf_range(-2.4, 2.4), randf_range(-5.6, -3.2))
+	if randf() < e.bread_chance:
+		drop("bread", e.cx - 8, e.y, 0, -5.0)
+
+
+## Герой вошёл на арену: решётка падает, звучит боевая музыка.
+func start_boss_fight(b: JarlBoss) -> void:
+	for c in arena_door:
+		level.blocked[c] = true
+	Audio.sfx("slam")
+	Audio.music("boss")
+	shake(4)
+	show_banner(b.boss_name, b.subtitle)
+
+
+## Ярость ярла: из тьмы по краям арены выходят волки.
+func summon_wolves() -> void:
+	var ground := boss.y + boss.h
+	var left: float = (arena_door[0].x + 2) * Level.TILE if not arena_door.is_empty() else boss.x - 240
+	var right: float = level.pixel_w - 5 * Level.TILE
+	for x in [left, right]:
+		var wolf := Wolf.new()
+		wolf.z_index = 9
+		add_child(wolf)
+		wolf.x = x
+		wolf.y = ground - wolf.h
+		wolf.facing = 1 if x < boss.x else -1
+		wolf.sync()
+		pending_enemies.append(wolf)
+		smoke(x + 14, ground - 12, 8)
+
+
+func on_boss_defeated(b: JarlBoss) -> void:
+	GameState.flags[b.flag] = true
+	boss_defeated = true
+	for c in arena_door:
+		level.blocked.erase(c)
+	for g in gates:
+		g.locked = false
+	if hidden_chest != null:
+		chests.append(hidden_chest)
+		hidden_chest.visible = true
+		sparks(hidden_chest.bx + 16, hidden_chest.by + 8, 16)
+		hidden_chest = null
+	gain_xp(b.xp, b.cx, b.y)
+	for i in int(b.silver[0]):
+		drop("coin", b.cx - 8, b.y + 20, randf_range(-3.2, 3.2), randf_range(-6.8, -3.6))
+	smoke(b.cx, b.cy, 24)
+	Audio.music(level.music)
+	show_banner("ЯРЛ ПОВЕРЖЕН", "Курган открыт")
+	save_game()
+
+
+func show_banner(title: String, subtitle := "") -> void:
+	banner = [title, subtitle]
+	title_t = 180
 
 
 func dust(x: float, y: float, n := 5) -> void:
@@ -318,6 +450,22 @@ func leave(target: String, spawn_name: String) -> void:
 
 
 # ------------------------------------------------------------ отрисовка
+## Кованая решётка арены, падающая сверху.
+func _draw_arena_door(c: Node2D) -> void:
+	if door_drop <= 0 or arena_door.is_empty():
+		return
+	var x := arena_door[0].x * Level.TILE
+	var top := arena_door[0].y * Level.TILE
+	var full := arena_door.size() * Level.TILE
+	var hh := int(full * door_drop)
+	c.draw_rect(Rect2(x - 2, top - 6, 20, 6), Pal.DARK_WOOD)
+	for bx in [x, x + 6, x + 12]:
+		c.draw_rect(Rect2(bx, top, 2, hh), Pal.STEEL)
+		c.draw_rect(Rect2(bx, top + hh, 2, 2), Pal.SNOW)
+	for yy in range(top + 12, top + hh, 24):
+		c.draw_rect(Rect2(x - 2, yy, 20, 2), Pal.STONE)
+
+
 func _draw_overlay() -> void:
 	for tx in texts:
 		UiKit.text_center(_overlay, tx[0], tx[1], tx[2], tx[3], Pal.NIGHT)

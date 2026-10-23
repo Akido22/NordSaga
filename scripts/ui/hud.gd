@@ -46,6 +46,15 @@ func _draw_hud() -> void:
 		if subtitle:
 			UiKit.text_center(c, cx, 70, subtitle, Pal.LINEN)
 
+	# Полоса жизни босса.
+	var boss := w.boss
+	if boss != null and boss.awake and not boss.dead and boss.state != "rise":
+		var r := Rect2(48, view.y - 34, view.x - 96, 28)
+		UiKit.panel(c, r, Pal.BLACK, Pal.GOLD, Pal.RED)
+		UiKit.text_center(c, cx, r.position.y + 6, boss.boss_name, Pal.GOLD)
+		var col := Pal.RED if boss.phase == 1 or (w.t / 8) % 2 else Pal.FIRE
+		bar(c, Rect2(r.position.x + 12, r.position.y + 17, r.size.x - 24, 6), boss.hp, boss.max_hp, col)
+
 	# Разговор.
 	var npc := w.talk_npc
 	if npc != null:

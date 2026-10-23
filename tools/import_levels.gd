@@ -4,8 +4,8 @@ extends Node
 ## (Сцена, а не --script: скриптам объектов нужны глобальные Data и Audio.)
 ## Внимание: перезаписывает сцены — правки, сделанные в редакторе, пропадут.
 
-const SRC := "res://data/levels"
-const DST := "res://scenes/levels"
+## Откуда и куда: карты игры и площадки автотестов.
+const DIRS := [["res://data/levels", "res://scenes/levels"], ["res://tests/levels", "res://tests/levels"]]
 const T := 16
 
 const TILE_CHARS := {"S": "stone", "L": "log", "=": "plank", "^": "spikes", "_": "boardwalk", "%": "flagstone"}
@@ -24,19 +24,22 @@ var _order: Array
 
 func _ready() -> void:
 	_order = JSON.parse_string(FileAccess.get_file_as_string("res://assets/tiles/tiles.json")).order
-	DirAccess.make_dir_recursive_absolute(DST)
 	var failed := false
-	for file in DirAccess.get_files_at(SRC):
-		if file.get_extension() != "txt":
-			continue
-		var root := _build(SRC.path_join(file))
-		var packed := PackedScene.new()
-		var err := packed.pack(root)
-		if err == OK:
-			err = ResourceSaver.save(packed, DST.path_join(file.get_basename() + ".tscn"))
-		print("%s -> %s: %s" % [file, DST.path_join(file.get_basename() + ".tscn"), error_string(err)])
-		failed = failed or err != OK
-		root.free()
+	for pair in DIRS:
+		var src: String = pair[0]
+		var dst: String = pair[1]
+		DirAccess.make_dir_recursive_absolute(dst)
+		for file in DirAccess.get_files_at(src):
+			if file.get_extension() != "txt":
+				continue
+			var root := _build(src.path_join(file))
+			var packed := PackedScene.new()
+			var err := packed.pack(root)
+			if err == OK:
+				err = ResourceSaver.save(packed, dst.path_join(file.get_basename() + ".tscn"))
+			print("%s -> %s: %s" % [file, dst.path_join(file.get_basename() + ".tscn"), error_string(err)])
+			failed = failed or err != OK
+			root.free()
 	get_tree().quit(1 if failed else 0)
 
 

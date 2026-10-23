@@ -1,118 +1,74 @@
+@tool
 class_name Level
 extends Node2D
-## Локация: тайлы, столкновения, фон. Пока строится из текстового файла
-## Pyxel-версии (data/levels/*.txt); на шаге 4 — из сцены.
+## Локация — сцена scenes/levels/<имя>.tscn:
+##   Tiles, Decor — слои тайлов (тип тайла — пользовательские данные «kind» в tiles.tres);
+##   Props — постройки; Objects — сундуки, камни, врата, таблички, монеты, декор;
+##   Npcs — жители; Enemies — метки врагов; Spawns — точки появления (Start — старт героя).
+## Сцены собирает из data/levels/*.txt tools/import_levels.gd; дальше их можно
+## править в редакторе.
 
 const TILE := 16
 const TILESET := preload("res://assets/tiles/tiles.tres")
 
 enum Kind { EMPTY, SOLID, PLATFORM, SPIKES }
 
-## Символы карты -> имя тайла (порядок — assets/tiles/tiles.json).
-const TILE_CHARS := {"S": "stone", "L": "log", "=": "plank", "^": "spikes", "_": "boardwalk", "%": "flagstone"}
-const DECOR_CHARS := {"g": "tuft", "m": "mushroom"}
+@export var title := ""
+@export var subtitle := ""
+@export_enum("forest", "town", "barrow") var sky := "forest"
+@export_enum("forest", "town", "boss") var music := "forest"
+## Размер карты в тайлах: края по горизонтали — стена, ниже низа — пропасть.
+@export var size_tiles := Vector2i(32, 24)
+## Арена босса: boss (id), arena_trigger (столбец), arena_door [столбец, строка от, до], boss_chest «столбец,строка».
+@export var boss := {}
 
 var level_name := ""
-var meta := {}
-var spawns := {}  # имя -> Vector2i (тайл)
-var objects := []  # [символ, столбец, строка]
 var blocked := {}  # Vector2i -> true: тайлы, временно ставшие стеной
-var w := 0  # в тайлах
+var w := 0
 var h := 0
 var pixel_w := 0
 var pixel_h := 0
-
 var _kinds := PackedByteArray()
-var _tiles: TileMapLayer
-var _decor: TileMapLayer
 
 
-func load_txt(path: String) -> void:
-	level_name = path.get_file().get_basename()
-	var rows: Array[String] = []
-	var section := ""
-	for raw in FileAccess.get_file_as_string(path).split("\n"):
-		var line := raw.trim_suffix("\r")
-		if section != "map" and (line.strip_edges() == "" or line.strip_edges().begins_with("#")):
-			continue
-		if line.begins_with("[") and line.ends_with("]"):
-			section = line.substr(1, line.length() - 2)
-			continue
-		if section == "map":
-			if line.strip_edges() != "":
-				rows.append(line)
-		elif "=" in line:
-			var key := line.get_slice("=", 0).strip_edges()
-			var value := line.substr(line.find("=") + 1).strip_edges()
-			if section == "meta":
-				meta[key] = value
-			elif section == "spawns":
-				spawns[key] = Vector2i(int(value.get_slice(",", 0)), int(value.get_slice(",", 1)))
-	_build(rows)
-
-
-func _build(rows: Array[String]) -> void:
-	h = rows.size()
-	w = 0
-	for r in rows:
-		w = maxi(w, r.length())
+func _ready() -> void:
+	if Engine.is_editor_hint():
+		return
+	level_name = scene_file_path.get_file().get_basename() if scene_file_path else str(name)
+	w = size_tiles.x
+	h = size_tiles.y
 	pixel_w = w * TILE
 	pixel_h = h * TILE
+	_index_tiles()
+	_add_background()
+
+
+func _index_tiles() -> void:
 	_kinds.resize(w * h)
 	_kinds.fill(Kind.EMPTY)
-	_tiles = _layer("Tiles")
-	_decor = _layer("Decor")
-	var order: Array = JSON.parse_string(FileAccess.get_file_as_string("res://assets/tiles/tiles.json")).order
-	for ty in h:
-		var row := rows[ty].rpad(w, ".")
-		for tx in w:
-			var ch := row[tx]
-			var tile_name := ""
-			if ch == "#":
-				var above := rows[ty - 1][tx] if ty > 0 and tx < rows[ty - 1].length() else "."
-				tile_name = "dirt" if above in "#S_%L" else "grass"
-			elif TILE_CHARS.has(ch):
-				tile_name = TILE_CHARS[ch]
-			elif DECOR_CHARS.has(ch):
-				_decor.set_cell(Vector2i(tx, ty), 0, Vector2i(order.find(DECOR_CHARS[ch]), 0))
-			elif ch != "." and ch != " ":
-				objects.append([ch, tx, ty])
-			if tile_name:
-				var coords := Vector2i(order.find(tile_name), 0)
-				_tiles.set_cell(Vector2i(tx, ty), 0, coords)
-				_kinds[ty * w + tx] = _kind_of(coords)
-	_add_background(meta.get("sky", "forest"))
+	var tiles: TileMapLayer = $Tiles
+	for c in tiles.get_used_cells():
+		if c.x < 0 or c.y < 0 or c.x >= w or c.y >= h:
+			continue
+		match str(tiles.get_cell_tile_data(c).get_custom_data("kind")):
+			"solid": _kinds[c.y * w + c.x] = Kind.SOLID
+			"platform": _kinds[c.y * w + c.x] = Kind.PLATFORM
+			"spikes": _kinds[c.y * w + c.x] = Kind.SPIKES
 
 
-func _layer(layer_name: String) -> TileMapLayer:
-	var layer := TileMapLayer.new()
-	layer.name = layer_name
-	layer.tile_set = TILESET
-	add_child(layer)
-	return layer
-
-
-func _kind_of(coords: Vector2i) -> int:
-	var kind: String = TILESET.get_source(0).get_tile_data(coords, 0).get_custom_data("kind")
-	match kind:
-		"solid": return Kind.SOLID
-		"platform": return Kind.PLATFORM
-		"spikes": return Kind.SPIKES
-	return Kind.EMPTY
-
-
-func _add_background(style: String) -> void:
+func _add_background() -> void:
 	var all: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/backgrounds/backgrounds.json"))
-	var layers: Array = all.get(style, [])
+	var layers: Array = all.get(sky, [])
 	for i in layers.size():
 		var l: Dictionary = layers[i]
 		var p := Parallax2D.new()
-		p.scroll_scale = Vector2(l.parallax, l.parallax)
+		# По вертикали фон идёт вместе с уровнем: в Pyxel-версии экран был высотой с уровень.
+		p.scroll_scale = Vector2(l.parallax, 1)
 		p.repeat_size = Vector2(l.width, 0)
 		p.repeat_times = 2
 		p.z_index = -100
 		var spr := Sprite2D.new()
-		spr.texture = load("res://assets/backgrounds/%s/%s.png" % [style, l.layer])
+		spr.texture = load("res://assets/backgrounds/%s/%s.png" % [sky, l.layer])
 		spr.centered = false
 		p.add_child(spr)
 		add_child(p)
@@ -147,9 +103,29 @@ func touches_spikes(bx: float, by: float, bw: float, bh: float) -> bool:
 	return false
 
 
-## Место старта героя (символ P) в пикселях: середина низа тайла.
-func start_point() -> Vector2:
-	for o in objects:
-		if o[0] == "P":
-			return Vector2(o[1] * TILE, (o[2] + 1) * TILE)
+## Точка появления по имени (левый край и низ тайла); нет такой — старт героя.
+func spawn_point(spawn_name: String) -> Vector2:
+	var spawns := get_node_or_null("Spawns")
+	if spawns:
+		var m: Node2D = spawns.get_node_or_null(spawn_name) if spawn_name else null
+		if m == null:
+			m = spawns.get_node_or_null("Start")
+		if m:
+			return m.position
 	return Vector2(TILE, TILE)
+
+
+func objects() -> Array:
+	return $Objects.get_children()
+
+
+func props() -> Array:
+	return $Props.get_children()
+
+
+func npcs() -> Array:
+	return $Npcs.get_children()
+
+
+func enemy_markers() -> Array:
+	return $Enemies.get_children()

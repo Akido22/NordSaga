@@ -4,6 +4,7 @@ extends Node
 ## Снимок экрана (без --headless): ... res://tests/smoke_test.tscn -- --shot=C:/путь/shot.png
 ##   [--scene=res://scenes/debug/asset_gallery.tscn]  (по умолчанию — проверка ввода)
 ##   [--hold=move_left,jump] [--frames=40]  — держать действия столько кадров перед снимком
+##   [--level=barrow] [--spawn=entry]  — для сцены мира: какая локация и точка появления
 
 var failures: Array[String] = []
 
@@ -133,7 +134,11 @@ func _screenshot(path: String) -> void:
 	_expect(packed != null, "сцена не загрузилась: " + scene)
 	if packed == null:
 		return
-	add_child(packed.instantiate())
+	var node := packed.instantiate()
+	if node is World and _arg("level"):
+		node.level_name = _arg("level")
+		node.spawn = _arg("spawn")
+	add_child(node)
 	var hold := {}
 	for a in _arg("hold").split(",", false):
 		hold[a] = true

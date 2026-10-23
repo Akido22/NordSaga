@@ -12,7 +12,8 @@ func _ready() -> void:
 	var ref: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/reference/movement.json"))
 	GameState.reset()
 	var world: World = load("res://scenes/world/world.tscn").instantiate()
-	world.level_path = "res://data/levels/test_level.txt"
+	world.level_name = "test_level"
+	GameState.spawn = null
 	world.set_physics_process(false)
 	world.respawn_after_death = false
 	add_child(world)

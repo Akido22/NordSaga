@@ -33,16 +33,42 @@ func reset() -> void:
 	pos = null
 
 
+const BAG_SIZE := 24
+const MAX_STACK := 9
+
+
 ## Начальная сума (data/progression.toml [start]); формат — как в сохранении.
 func starting_inventory() -> Dictionary:
 	var start: Dictionary = Data.table("progression").get("start", {})
-	var bag := []
-	for pair in start.get("items", []):
-		bag.append([pair[0], int(pair[1])])
-	return {
+	inventory = {
 		"equipment": {"weapon": start.get("weapon"), "armor": start.get("armor")},
-		"bag": bag,
+		"bag": [], "silver": 0, "spells": [],
 	}
+	inventory.bag.resize(BAG_SIZE)
+	for pair in start.get("items", []):
+		add_item(pair[0], int(pair[1]))
+	return inventory
+
+
+## Кладёт предмет в суму; false — места нет. Руны не занимают места — запоминаются.
+## (Полная сума и снаряжение — шаг 7.)
+func add_item(id: String, count := 1) -> bool:
+	var it: Dictionary = Data.table("items").get(id, {})
+	if it.get("kind") == "rune":
+		if not id in inventory.spells:
+			inventory.spells.append(id)
+		return true
+	var bag: Array = inventory.bag
+	if it.get("kind") in ["consumable", "material"]:
+		for cell in bag:
+			if cell and cell[0] == id and cell[1] + count <= MAX_STACK:
+				cell[1] += count
+				return true
+	for i in bag.size():
+		if bag[i] == null:
+			bag[i] = [id, count]
+			return true
+	return false
 
 
 ## id надетого предмета в ячейке (weapon, shield, helmet, armor, amulet) или "".

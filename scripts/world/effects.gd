@@ -25,6 +25,12 @@ func smoke(x: float, y: float, n := 12) -> void:
 				randf_range(-1.8, -0.4), randi_range(18, 34), [Pal.STONE, Pal.STEEL, Pal.DUSK].pick_random(), 0.02])
 
 
+## Дымок из трубы: медленно поднимается и сносится ветром.
+func puff(x: float, y: float) -> void:
+	_parts.append([x + randf_range(-2, 2), y, randf_range(0.1, 0.5), randf_range(-1.0, -0.6),
+			randi_range(40, 70), [Pal.STONE, Pal.STEEL].pick_random(), 0.0])
+
+
 func tick() -> void:
 	for p in _parts:
 		p[0] += p[2]

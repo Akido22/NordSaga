@@ -23,7 +23,7 @@
 1. Каркас: настройки экрана, Input Map, папки, autoload (`Data`, `GameState`, `SaveSystem`, `Audio`) ✔
 2. Перенос ресурсов из Pyxel: тайлы, постройки, иконки, шрифт, звуки, TOML → JSON ✔
 3. Герой и движение — ощущение как в Pyxel ✔
-4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган
+4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган ✔
 5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр
 6. Враги и ярл Хрёрек
 7. Прокачка, руны, жители, лавки, кузница
@@ -34,10 +34,12 @@
 ## Структура
 
 ```
-scenes/    world (мир локации), player, enemies, bosses, levels, ui, props, debug
+scenes/    game.tscn (корень: смена локаций), world, levels (town, test_level, barrow),
+           player, enemies, bosses, ui, debug
 scripts/   autoload; physics (TileBody — тайловая физика); world (World, Level, Effects);
-           characters (HumanoidLook — гуманоид из слоёв); shaders (перекраска по палитре);
-           palette.gd — 16 цветов (Pal), strips.gd — анимации из лент (Strips)
+           objects (объекты уровня); characters (HumanoidLook — гуманоид из слоёв);
+           ui (UiKit — панели и текст, hud); shaders (перекраска по палитре);
+           palette.gd (Pal), strips.gd (Strips — анимации из лент), icons.gd (Icons)
 data/      баланс (TOML и собранный JSON в data/json), levels/*.txt — карты из Pyxel-версии
 assets/    tiles, sprites (characters, objects, props, icons), backgrounds, fonts, audio/sfx, audio/music
 tests/     автопроверки
@@ -89,6 +91,26 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 низ-левый угол тайла в уровне. Новый рисунок с тем же именем и описанием
 подменяет старый без правки кода.
 
+## Локации
+
+Сцены `scenes/levels/*.tscn` правятся прямо в редакторе Godot:
+
+| Узел | Что внутри |
+|---|---|
+| `Tiles`, `Decor` | слои тайлов (набор `assets/tiles/tiles.tres`; тип тайла — данные «kind»: solid, platform, spikes) |
+| `Props` | постройки `Prop`: вид и ширина в тайлах |
+| `Objects` | `Chest` (добыча), `SavePoint` (камень/стела), `Sign` (текст), `Gate` (куда и в какую точку), `EdgeExit`, `Pickup` (монета/вещь), `Decor` |
+| `Npcs` | жители `Npc` (id из `data/npcs.toml`) |
+| `Enemies` | метки врагов (сами враги — шаг 6) |
+| `Spawns` | точки появления; `Start` — старт героя |
+
+У корня — название, подзаголовок, фон, музыка, размер в тайлах и описание арены
+босса. Объект ставится на левый нижний угол своего тайла (сетка 16 px).
+
+Сцены были собраны из карт Pyxel-версии (`data/levels/*.txt`) импортёром
+`godot --headless --path . res://tools/import_levels.tscn` — **повторный импорт
+затирает правки, сделанные в редакторе.**
+
 ## Управление
 
 | Действие | Клавиатура | Геймпад |
@@ -101,25 +123,30 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 | Лечение | Q / H | LB |
 | Чары / смена руны | F / U, E / O | Y, левый стик (нажатие) |
 | Сума / пауза | I / Tab, Esc / P | Back, Start |
+| Открыть, говорить, войти | ↑ / W | крестовина вверх |
 
 ## Проверка
 
 ```
 godot --headless --path . res://tests/smoke_test.tscn
 godot --headless --path . res://tests/movement_test.tscn
+godot --headless --path . res://tests/levels_test.tscn
 ```
 - `smoke_test` — настройки, ввод, сохранение, ресурсы (`SMOKE OK`).
 - `movement_test` — движение героя кадр в кадр против Pyxel-версии
   (`MOVEMENT OK`). Эталон `tests/reference/movement.json` пересобирается так:
   `python tests/reference/make_movement_reference.py D:/путь/к/NordSagePixel`.
+- `levels_test` — тайлы сцен совпадают с картами, сундук, стела, табличка,
+  разговор, монета, переходы город → тропа → курган → тропа → город (`LEVELS OK`).
 
 Снимок любой сцены (без `--headless`), можно с удержанием действий:
 ```
 godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shot.png --scene=res://scenes/world/world.tscn --hold=move_right,jump --frames=40
 ```
 
-Главная сцена (F5) — `scenes/world/world.tscn`: «Лесная тропа», герой бегает
-и прыгает (врагов, сундуков и боя пока нет; погибший встаёт на старте).
+Главная сцена (F5) — `scenes/game.tscn`: новая игра в Велеграде. Работают сундуки,
+стела и рунные камни (сохранение), таблички, разговоры, монеты, переходы между
+локациями. Врагов и боя пока нет; погибший встаёт на старте.
 `scenes/debug/input_test.tscn` — проверка ввода.
 `scenes/debug/asset_gallery.tscn` (F6 в редакторе) — все перенесённые ресурсы:
 фон с параллаксом, постройки и объекты с анимацией, тайлы, иконки, шрифт.

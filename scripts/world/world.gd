@@ -1,7 +1,8 @@
 class_name World
 extends Node2D
 ## Мир одной локации: уровень, герой, объекты, эффекты, камера. Логика — кадрами в tick(),
-## порядок как в Pyxel-версии: ввод -> герой -> объекты -> взаимодействие -> частицы -> камера.
+## порядок как в Pyxel-версии: ввод -> (стоп-кадр) -> герой -> враги -> объекты ->
+## взаимодействие -> частицы -> камера.
 
 signal exit_requested(target: String, spawn: String)
 
@@ -11,6 +12,8 @@ const LEVELS := "res://scenes/levels/%s.tscn"
 const LOOK_AHEAD := 48.0  # камера смотрит вперёд по ходу героя
 const CAM_LERP := 0.12
 const INTERACT_DIST := 28.0
+## Враги, которые уже перенесены (остальные метки ждут шага 6): вид -> сдвиг по x, как в Pyxel (x2).
+const ENEMY_OFFSETS := {"dummy": -2.0}
 
 @export var level_name := "town"
 ## Точка появления (имя из Spawns); пусто — Start.
@@ -34,6 +37,11 @@ var edge_exits: Array[EdgeExit] = []
 var pickups: Array[Pickup] = []
 var props: Array = []
 var npcs: Array = []
+var enemies: Array = []
+var pending_enemies: Array = []
+var projectiles: Array = []  # стрелы, ударные волны, огонь — шаг 6–7
+var hitstop := 0  # «стоп-кадр» при сильных попаданиях
+var shake_t := 0
 var hidden_chest: Chest = null  # награда за босса — появится после победы
 var boss_defeated := false
 
@@ -118,6 +126,19 @@ func _collect_objects() -> void:
 			edge_exits.append(o)
 	props = level.props()
 	npcs = level.npcs()
+	for m in level.enemy_markers():
+		var e := _make_enemy(m.kind)
+		if e:
+			e.z_index = 9
+			add_child(e)
+			e.place_on_tile(m.tx, m.ty, ENEMY_OFFSETS[m.kind])
+			enemies.append(e)
+
+
+func _make_enemy(kind: String) -> Enemy:
+	match kind:
+		"dummy": return Dummy.new()
+	return null
 
 
 func key(uid: String) -> String:
@@ -132,9 +153,21 @@ func _physics_process(_delta: float) -> void:
 func tick() -> void:
 	t += 1
 	player.poll_input()
+	if hitstop > 0:
+		hitstop -= 1
+		return
 	player.tick(self)
 	if player.dead and player.dead_t > 150 and respawn_after_death:
 		_respawn()
+	for e in enemies:
+		e.tick(self)
+	for e in enemies.filter(func(e): return e.dead):
+		e.queue_free()
+	enemies = enemies.filter(func(e): return not e.dead) + pending_enemies
+	pending_enemies = []
+	for pr in projectiles:
+		pr.tick(self)
+	projectiles = projectiles.filter(func(pr): return not pr.dead)
 	for o in props:
 		o.tick(self)
 	for o in npcs:
@@ -158,6 +191,8 @@ func tick() -> void:
 	for ts in toasts:
 		ts[2] -= 1
 	toasts = toasts.filter(func(ts): return ts[2] > 0)
+	if shake_t > 0:
+		shake_t -= 1
 	cam += (_target_cam() - cam) * CAM_LERP
 	_sync()
 
@@ -192,7 +227,10 @@ func _respawn() -> void:
 
 func _sync() -> void:
 	player.sync()
-	camera.position = Vector2(int(cam.x), int(cam.y))
+	for e in enemies:
+		e.sync()
+	var jitter := randi_range(-1, 1) * mini(2, shake_t) * 2 if shake_t > 0 else 0
+	camera.position = Vector2(int(cam.x) + jitter, int(cam.y))
 	_overlay.queue_redraw()
 
 
@@ -211,6 +249,20 @@ func toast(text: String, col := Pal.LINEN) -> void:
 
 func float_text(x: float, y: float, text: String, col: Color) -> void:
 	texts.append([x, y, text, col, 40])
+
+
+func shake(amount: int) -> void:
+	shake_t = maxi(shake_t, amount)
+
+
+func freeze(frames: int) -> void:
+	hitstop = maxi(hitstop, frames)
+
+
+## Добыча, опыт и прочее — шаг 6–7.
+func on_enemy_killed(e: Enemy) -> void:
+	effects.smoke(e.cx, e.cy)
+	shake(2)
 
 
 func dust(x: float, y: float, n := 5) -> void:

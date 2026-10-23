@@ -88,11 +88,42 @@ func equipment_sum(stat: String) -> int:
 	return total
 
 
-## Наибольшая жизнь: основа + вещи + очки Живучести (полная прокачка — шаг 7).
+## Очки прокачки в показателе: str, sta, vit, spi (полная прокачка — шаг 7).
+func stat(id: String) -> int:
+	return int(inventory.get("stats", {}).get(id, 0))
+
+
+## Заточка оружия id: 0..max_upgrade.
+func upgrade_level(id: String) -> int:
+	return int(inventory.get("upgrades", {}).get(id, 0))
+
+
+## Наибольшая жизнь: основа + вещи + очки Живучести.
 func max_hp() -> int:
 	var prog: Dictionary = Data.table("progression")
-	var vit := int(inventory.get("stats", {}).get("vit", 0))
-	return int(prog.base.hp) + equipment_sum("hp") + vit * int(prog.stats.vitality)
+	return int(prog.base.hp) + equipment_sum("hp") + stat("vit") * int(prog.stats.vitality)
+
+
+## Атака: основа + вещи + заточка оружия + очки Силы.
+func attack() -> int:
+	var prog: Dictionary = Data.table("progression")
+	var weapon := equipped("weapon")
+	var bonus := upgrade_level(weapon) if weapon else 0
+	return int(prog.base.attack) + equipment_sum("atk") + bonus + stat("str") * int(prog.stats.strength)
+
+
+func defense() -> int:
+	return int(Data.table("progression").base.defense) + equipment_sum("defense")
+
+
+func max_stamina() -> int:
+	var prog: Dictionary = Data.table("progression")
+	return int(prog.base.stamina) + stat("sta") * int(prog.stats.endurance)
+
+
+func max_mana() -> int:
+	var prog: Dictionary = Data.table("progression")
+	return int(prog.base.mana) + stat("spi") * int(prog.stats.spirit)
 
 
 static func key(level_name: String, uid: String) -> String:

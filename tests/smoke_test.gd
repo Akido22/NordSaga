@@ -5,6 +5,7 @@ extends Node
 ##   [--scene=res://scenes/debug/asset_gallery.tscn]  (по умолчанию — проверка ввода)
 ##   [--hold=move_left,jump] [--frames=40]  — держать действия столько кадров перед снимком
 ##   [--level=barrow] [--spawn=entry]  — для сцены мира: какая локация и точка появления
+##   [--equip=weapon:sword,shield:shield_round]  — надеть вещи перед снимком
 
 var failures: Array[String] = []
 
@@ -134,6 +135,8 @@ func _screenshot(path: String) -> void:
 	_expect(packed != null, "сцена не загрузилась: " + scene)
 	if packed == null:
 		return
+	for pair in _arg("equip").split(",", false):
+		GameState.inventory.equipment[pair.get_slice(":", 0)] = pair.get_slice(":", 1)
 	var node := packed.instantiate()
 	if node is World and _arg("level"):
 		node.level_name = _arg("level")
@@ -147,10 +150,10 @@ func _screenshot(path: String) -> void:
 		# physics_frame приходит до обработки кадра — ввод задаётся для этого же кадра
 		await get_tree().physics_frame
 		Controls.scripted = {"held": hold, "pressed": hold if i == 0 else {}}
-	await get_tree().physics_frame
-	Controls.scripted = null
+	# Действия держатся до самого снимка, иначе на нём будет уже следующая поза.
 	await RenderingServer.frame_post_draw
 	var err := get_viewport().get_texture().get_image().save_png(path)
+	Controls.scripted = null
 	_expect(err == OK, "снимок не сохранился: " + path)
 
 

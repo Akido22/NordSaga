@@ -24,7 +24,7 @@
 2. Перенос ресурсов из Pyxel: тайлы, постройки, иконки, шрифт, звуки, TOML → JSON ✔
 3. Герой и движение — ощущение как в Pyxel ✔
 4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган ✔
-5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр
+5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр ✔
 6. Враги и ярл Хрёрек
 7. Прокачка, руны, жители, лавки, кузница
 8. Интерфейс и сохранение — полное прохождение
@@ -34,10 +34,11 @@
 ## Структура
 
 ```
-scenes/    game.tscn (корень: смена локаций), world, levels (town, test_level, barrow),
+scenes/    game.tscn (корень: смена локаций), world, levels (town, test_level, barrow, arena),
            player, enemies, bosses, ui, debug
 scripts/   autoload; physics (TileBody — тайловая физика); world (World, Level, Effects);
-           objects (объекты уровня); characters (HumanoidLook — гуманоид из слоёв);
+           objects (объекты уровня); enemies (Enemy, Dummy — чучело);
+           characters (HumanoidLook — гуманоид из слоёв);
            ui (UiKit — панели и текст, hud); shaders (перекраска по палитре);
            palette.gd (Pal), strips.gd (Strips — анимации из лент), icons.gd (Icons)
 data/      баланс (TOML и собранный JSON в data/json), levels/*.txt — карты из Pyxel-версии
@@ -131,22 +132,29 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 godot --headless --path . res://tests/smoke_test.tscn
 godot --headless --path . res://tests/movement_test.tscn
 godot --headless --path . res://tests/levels_test.tscn
+godot --headless --path . res://tests/combat_test.tscn
 ```
 - `smoke_test` — настройки, ввод, сохранение, ресурсы (`SMOKE OK`).
 - `movement_test` — движение героя кадр в кадр против Pyxel-версии
   (`MOVEMENT OK`). Эталон `tests/reference/movement.json` пересобирается так:
   `python tests/reference/make_movement_reference.py D:/путь/к/NordSagePixel`.
+- `combat_test` — бой героя кадр в кадр против Pyxel-версии на «Ристалище»
+  (`data/levels/arena.txt`): серии ударов, тяжёлый удар, удар в падении,
+  перекаты, блок, выносливость до нуля, стоп-кадры (`COMBAT OK`). Эталон:
+  `python tests/reference/make_combat_reference.py D:/путь/к/NordSagePixel`.
 - `levels_test` — тайлы сцен совпадают с картами, сундук, стела, табличка,
   разговор, монета, переходы город → тропа → курган → тропа → город (`LEVELS OK`).
 
 Снимок любой сцены (без `--headless`), можно с удержанием действий:
 ```
-godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shot.png --scene=res://scenes/world/world.tscn --hold=move_right,jump --frames=40
+godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shot.png --scene=res://scenes/world/world.tscn --level=arena --equip=weapon:sword,shield:shield_red --hold=block --frames=30
 ```
 
 Главная сцена (F5) — `scenes/game.tscn`: новая игра в Велеграде. Работают сундуки,
 стела и рунные камни (сохранение), таблички, разговоры, монеты, переходы между
-локациями. Врагов и боя пока нет; погибший встаёт на старте.
+локациями и весь бой героя; бить пока можно только чучела (у тренера в Велеграде и
+на «Ристалище» — `scenes/levels/arena.tscn`, F6). Враги — шаг 6; погибший
+встаёт на старте.
 `scenes/debug/input_test.tscn` — проверка ввода.
 `scenes/debug/asset_gallery.tscn` (F6 в редакторе) — все перенесённые ресурсы:
 фон с параллаксом, постройки и объекты с анимацией, тайлы, иконки, шрифт.

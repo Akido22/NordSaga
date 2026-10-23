@@ -1,6 +1,6 @@
 extends CanvasLayer
-## Экранный слой мира: сообщения, название локации, табличка, разговор.
-## Полный интерфейс (жизнь, выносливость, мана, руны) — шаг 8.
+## Экранный слой мира: жизнь, выносливость, мана, серебро, сообщения, название
+## локации, табличка, разговор. Полный интерфейс (руны, припасы, уровень) — шаг 8.
 
 var world: World
 var _canvas: Node2D
@@ -23,6 +23,7 @@ func _draw_hud() -> void:
 	var cx := view.x / 2
 	var w := world
 	var banner_on := w.title_t > 0 and w.title_t < 170
+	_draw_stats(c, w.player)
 
 	# Сообщения.
 	for i in w.toasts.size():
@@ -65,3 +66,27 @@ func _draw_hud() -> void:
 		UiKit.panel(c, r, Pal.DARK_WOOD, Pal.WOOD, Pal.GOLD)
 		for i in lines.size():
 			UiKit.text(c, r.position.x + 12, r.position.y + 8 + i * UiKit.LINE_H, lines[i], Pal.LINEN, Pal.NIGHT)
+
+
+## Полоса значения, как ui.bar в Pyxel-версии.
+static func bar(c: CanvasItem, r: Rect2, value: float, max_value: float, col: Color, shine := true) -> void:
+	c.draw_rect(r, Pal.NIGHT)
+	var fill := floorf((r.size.x - 2) * maxf(0, value) / maxf(1, max_value))
+	c.draw_rect(Rect2(r.position + Vector2.ONE, Vector2(fill, r.size.y - 2)), col)
+	if shine and fill > 2:
+		c.draw_rect(Rect2(r.position + Vector2.ONE, Vector2(fill, 1)), Pal.SNOW)
+	c.draw_rect(r.grow(-0.5), Pal.DARK_WOOD, false, 1.0)
+
+
+func _draw_stats(c: CanvasItem, p: Player) -> void:
+	c.draw_rect(Rect2(2, 2, 150, 42), Pal.BLACK)
+	c.draw_rect(Rect2(2.5, 2.5, 149, 41), Pal.DARK_WOOD, false, 1.0)
+	c.draw_texture(Icons.texture("heart"), Vector2(5, 4))
+	bar(c, Rect2(24, 6, 86, 8), GameState.hp, GameState.max_hp(), Pal.RED)
+	UiKit.text(c, 114, 5, "%d/%d" % [GameState.hp, GameState.max_hp()], Pal.LINEN)
+	var flash := p.stamina_flash and (p.stamina_flash / 3) % 2
+	bar(c, Rect2(24, 16, 86, 5), p.stamina, GameState.max_stamina(), Pal.RED if flash else Pal.MOSS, false)
+	bar(c, Rect2(24, 23, 86, 5), p.mana, GameState.max_mana(), Pal.FJORD, false)
+	UiKit.text(c, 114, 20, str(int(p.mana)), Pal.FJORD)
+	c.draw_texture(Icons.texture("coin"), Vector2(5, 27))
+	UiKit.text(c, 24, 31, str(int(GameState.inventory.get("silver", 0))), Pal.LINEN)

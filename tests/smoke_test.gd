@@ -3,6 +3,7 @@ extends Node
 ## Запуск: godot --headless --path . res://tests/smoke_test.tscn
 ## Снимок экрана (без --headless): ... res://tests/smoke_test.tscn -- --shot=C:/путь/shot.png
 ##   [--scene=res://scenes/debug/asset_gallery.tscn]  (по умолчанию — проверка ввода)
+##   [--hold=move_left,jump] [--frames=40]  — держать действия столько кадров перед снимком
 
 var failures: Array[String] = []
 
@@ -133,8 +134,16 @@ func _screenshot(path: String) -> void:
 	if packed == null:
 		return
 	add_child(packed.instantiate())
-	for i in 30:
-		await get_tree().process_frame
+	var hold := {}
+	for a in _arg("hold").split(",", false):
+		hold[a] = true
+	var frames := int(_arg("frames")) if _arg("frames") else 30
+	for i in frames:
+		# physics_frame приходит до обработки кадра — ввод задаётся для этого же кадра
+		await get_tree().physics_frame
+		Controls.scripted = {"held": hold, "pressed": hold if i == 0 else {}}
+	await get_tree().physics_frame
+	Controls.scripted = null
 	await RenderingServer.frame_post_draw
 	var err := get_viewport().get_texture().get_image().save_png(path)
 	_expect(err == OK, "снимок не сохранился: " + path)

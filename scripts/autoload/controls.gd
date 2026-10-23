@@ -64,6 +64,29 @@ func _register(action: String, bind: Dictionary) -> void:
 		InputMap.action_add_event(action, motion)
 
 
+## Подмена ввода для автотестов: {"held": {действие: true}, "pressed": {действие: true}}.
+var scripted = null
+
+
+## Действие удерживается.
+func held(action: String) -> bool:
+	if scripted != null:
+		return scripted.held.has(action)
+	return Input.is_action_pressed(action)
+
+
+## Нажато в этом кадре.
+func pressed(action: String) -> bool:
+	if scripted != null:
+		return scripted.pressed.has(action)
+	return Input.is_action_just_pressed(action)
+
+
+## Направление -1, 0 или 1, как в Pyxel-версии (стик — с мёртвой зоной).
+func direction() -> int:
+	return int(held("move_right")) - int(held("move_left"))
+
+
 ## Горизонталь -1..1 (стрелки, WASD, крестовина, стик).
 func axis_x() -> float:
 	return Input.get_axis("move_left", "move_right")

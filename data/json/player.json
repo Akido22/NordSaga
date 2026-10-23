@@ -1,7 +1,7 @@
 {
  "movement": {
-  "max_speed": 1.35,
-  "jump_velocity": 4.1,
+  "max_speed": 2.7,
+  "jump_velocity": 8.2,
   "coyote_frames": 6,
   "jump_buffer": 7
  },

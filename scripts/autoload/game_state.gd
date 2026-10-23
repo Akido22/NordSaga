@@ -4,7 +4,7 @@ extends Node
 
 const START_LEVEL := "town"
 
-var inventory := {}  # до шага 7 хранится как есть, в виде словаря из сохранения
+var inventory := {}  # до шага 7 — словарь в формате сохранения: equipment, bag…
 var hp := 10
 var collected := {}  # "локация:uid" -> true, подобранные предметы с карты
 var chests := {}  # "локация:uid" -> оставшаяся добыча
@@ -16,9 +16,13 @@ var spawn = "start"
 var pos = null  # Vector2 из сохранения
 
 
+func _ready() -> void:
+	reset()
+
+
 func reset() -> void:
-	inventory = {}
-	hp = 10
+	inventory = starting_inventory()
+	hp = max_hp()
 	collected = {}
 	chests = {}
 	save_point = null
@@ -27,6 +31,42 @@ func reset() -> void:
 	level = START_LEVEL
 	spawn = "start"
 	pos = null
+
+
+## Начальная сума (data/progression.toml [start]); формат — как в сохранении.
+func starting_inventory() -> Dictionary:
+	var start: Dictionary = Data.table("progression").get("start", {})
+	var bag := []
+	for pair in start.get("items", []):
+		bag.append([pair[0], int(pair[1])])
+	return {
+		"equipment": {"weapon": start.get("weapon"), "armor": start.get("armor")},
+		"bag": bag,
+	}
+
+
+## id надетого предмета в ячейке (weapon, shield, helmet, armor, amulet) или "".
+func equipped(slot: String) -> String:
+	var item = inventory.get("equipment", {}).get(slot)
+	return item if item is String else ""
+
+
+## Сумма поля stat по надетым вещам (hp, atk, defense…).
+func equipment_sum(stat: String) -> int:
+	var total := 0
+	var items: Dictionary = Data.table("items")
+	for slot in inventory.get("equipment", {}):
+		var id := equipped(slot)
+		if id and items.has(id):
+			total += int(items[id].get(stat, 0))
+	return total
+
+
+## Наибольшая жизнь: основа + вещи + очки Живучести (полная прокачка — шаг 7).
+func max_hp() -> int:
+	var prog: Dictionary = Data.table("progression")
+	var vit := int(inventory.get("stats", {}).get("vit", 0))
+	return int(prog.base.hp) + equipment_sum("hp") + vit * int(prog.stats.vitality)
 
 
 static func key(level_name: String, uid: String) -> String:
@@ -53,8 +93,8 @@ func to_save(level_name: String, at: Vector2) -> Dictionary:
 
 func from_save(data: Dictionary) -> void:
 	reset()
-	inventory = data.get("inventory", {})
-	hp = maxi(1, int(data.get("hp", hp)))
+	inventory = data.get("inventory", inventory)
+	hp = clampi(int(data.get("hp", hp)), 1, max_hp())
 	for k in data.get("collected", []):
 		collected[k] = true
 	chests = data.get("chests", {})

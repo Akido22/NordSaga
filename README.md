@@ -22,7 +22,7 @@
 0. Решения и репозиторий ✔
 1. Каркас: настройки экрана, Input Map, папки, autoload (`Data`, `GameState`, `SaveSystem`, `Audio`) ✔
 2. Перенос ресурсов из Pyxel: тайлы, постройки, иконки, шрифт, звуки, TOML → JSON ✔
-3. Герой и движение — ощущение как в Pyxel
+3. Герой и движение — ощущение как в Pyxel ✔
 4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган
 5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр
 6. Враги и ярл Хрёрек
@@ -34,9 +34,11 @@
 ## Структура
 
 ```
-scenes/    player, enemies, bosses, levels, ui, props, debug
-scripts/   autoload, combat, ai; palette.gd — 16 цветов (Pal), strips.gd — анимации из лент (Strips)
-data/      баланс (TOML и собранный JSON в data/json)
+scenes/    world (мир локации), player, enemies, bosses, levels, ui, props, debug
+scripts/   autoload; physics (TileBody — тайловая физика); world (World, Level, Effects);
+           characters (HumanoidLook — гуманоид из слоёв); shaders (перекраска по палитре);
+           palette.gd — 16 цветов (Pal), strips.gd — анимации из лент (Strips)
+data/      баланс (TOML и собранный JSON в data/json), levels/*.txt — карты из Pyxel-версии
 assets/    tiles, sprites (characters, objects, props, icons), backgrounds, fonts, audio/sfx, audio/music
 tests/     автопроверки
 tools/     конвертеры
@@ -58,7 +60,9 @@ tools/     конвертеры
 ```
 python tools/toml_to_json.py
 ```
-Игра читает собранные `data/json/*.json`. При экспорте игры добавить `*.json`
+Игра читает собранные `data/json/*.json`.
+Единицы — пиксели нового масштаба (тайл 16 px): скорости и расстояния вдвое
+больше, чем в Pyxel-версии, время в кадрах (60 = 1 секунда) — то же. При экспорте игры добавить `*.json`
 в фильтр ресурсов, иначе таблицы не попадут в сборку.
 
 ## Ресурсы
@@ -102,8 +106,20 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 
 ```
 godot --headless --path . res://tests/smoke_test.tscn
+godot --headless --path . res://tests/movement_test.tscn
 ```
-Печатает `SMOKE OK`. Пока главная сцена — `scenes/debug/input_test.tscn`:
-по F5 видно экран, палитру и подсветку нажатых действий.
+- `smoke_test` — настройки, ввод, сохранение, ресурсы (`SMOKE OK`).
+- `movement_test` — движение героя кадр в кадр против Pyxel-версии
+  (`MOVEMENT OK`). Эталон `tests/reference/movement.json` пересобирается так:
+  `python tests/reference/make_movement_reference.py D:/путь/к/NordSagePixel`.
+
+Снимок любой сцены (без `--headless`), можно с удержанием действий:
+```
+godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shot.png --scene=res://scenes/world/world.tscn --hold=move_right,jump --frames=40
+```
+
+Главная сцена (F5) — `scenes/world/world.tscn`: «Лесная тропа», герой бегает
+и прыгает (врагов, сундуков и боя пока нет; погибший встаёт на старте).
+`scenes/debug/input_test.tscn` — проверка ввода.
 `scenes/debug/asset_gallery.tscn` (F6 в редакторе) — все перенесённые ресурсы:
 фон с параллаксом, постройки и объекты с анимацией, тайлы, иконки, шрифт.

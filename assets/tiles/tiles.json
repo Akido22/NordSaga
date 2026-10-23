@@ -1,0 +1,33 @@
+{
+ "tile": 16,
+ "order": [
+  "grass",
+  "dirt",
+  "stone",
+  "plank",
+  "spikes",
+  "log",
+  "tuft",
+  "mushroom",
+  "boardwalk",
+  "flagstone"
+ ],
+ "solid": [
+  "grass",
+  "dirt",
+  "stone",
+  "log",
+  "boardwalk",
+  "flagstone"
+ ],
+ "one_way": [
+  "plank"
+ ],
+ "hazard": [
+  "spikes"
+ ],
+ "decor": [
+  "tuft",
+  "mushroom"
+ ]
+}

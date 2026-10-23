@@ -1,0 +1,192 @@
+{
+ "banner_1": {
+  "frame_w": 28,
+  "frame_h": 106,
+  "frames": 21,
+  "fps": 12.0,
+  "anchor": [
+   6,
+   106
+  ]
+ },
+ "barrels_2": {
+  "frame_w": 36,
+  "frame_h": 38,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   0,
+   38
+  ]
+ },
+ "bones_2": {
+  "frame_w": 34,
+  "frame_h": 10,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   2,
+   10
+  ]
+ },
+ "fence_4": {
+  "frame_w": 64,
+  "frame_h": 30,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   0,
+   30
+  ]
+ },
+ "forge_7": {
+  "frame_w": 128,
+  "frame_h": 106,
+  "frames": 24,
+  "fps": 30.0,
+  "anchor": [
+   8,
+   106
+  ]
+ },
+ "izba_7": {
+  "frame_w": 120,
+  "frame_h": 132,
+  "frames": 7,
+  "fps": 1.5,
+  "anchor": [
+   4,
+   132
+  ]
+ },
+ "izba_8": {
+  "frame_w": 136,
+  "frame_h": 132,
+  "frames": 7,
+  "fps": 1.5,
+  "anchor": [
+   4,
+   132
+  ]
+ },
+ "lantern_1": {
+  "frame_w": 34,
+  "frame_h": 76,
+  "frames": 3,
+  "fps": 12.0,
+  "anchor": [
+   8,
+   76
+  ]
+ },
+ "longhouse_14": {
+  "frame_w": 232,
+  "frame_h": 118,
+  "frames": 7,
+  "fps": 1.5,
+  "anchor": [
+   4,
+   118
+  ]
+ },
+ "longhouse_15": {
+  "frame_w": 248,
+  "frame_h": 118,
+  "frames": 7,
+  "fps": 1.5,
+  "anchor": [
+   4,
+   118
+  ]
+ },
+ "oak_2": {
+  "frame_w": 106,
+  "frame_h": 136,
+  "frames": 16,
+  "fps": 7.5,
+  "anchor": [
+   36,
+   134
+  ]
+ },
+ "stall_5": {
+  "frame_w": 88,
+  "frame_h": 72,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   4,
+   72
+  ]
+ },
+ "stall_6": {
+  "frame_w": 104,
+  "frame_h": 72,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   4,
+   72
+  ]
+ },
+ "throne_5": {
+  "frame_w": 80,
+  "frame_h": 112,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   0,
+   112
+  ]
+ },
+ "torch_1": {
+  "frame_w": 58,
+  "frame_h": 58,
+  "frames": 3,
+  "fps": 15.0,
+  "anchor": [
+   20,
+   100
+  ]
+ },
+ "urn_2": {
+  "frame_w": 20,
+  "frame_h": 26,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   -4,
+   26
+  ]
+ },
+ "wall_2": {
+  "frame_w": 32,
+  "frame_h": 122,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   0,
+   122
+  ]
+ },
+ "wall_6": {
+  "frame_w": 96,
+  "frame_h": 122,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   0,
+   122
+  ]
+ },
+ "well_3": {
+  "frame_w": 50,
+  "frame_h": 76,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   4,
+   76
+  ]
+ }
+}

@@ -1,0 +1,17 @@
+[remap]
+
+importer="font_data_bmfont"
+type="FontFile"
+uid="uid://up3q0qxxr16y"
+path="res://.godot/imported/nord_font.fnt-a915e3841b4cfcc5355f45b1ad18183c.fontdata"
+
+[deps]
+
+source_file="res://assets/fonts/nord_font.fnt"
+dest_files=["res://.godot/imported/nord_font.fnt-a915e3841b4cfcc5355f45b1ad18183c.fontdata"]
+
+[params]
+
+fallbacks=[]
+compress=true
+scaling_mode=2

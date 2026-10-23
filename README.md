@@ -21,7 +21,7 @@
 
 0. Решения и репозиторий ✔
 1. Каркас: настройки экрана, Input Map, папки, autoload (`Data`, `GameState`, `SaveSystem`, `Audio`) ✔
-2. Перенос ресурсов из Pyxel: тайлы, постройки, иконки, шрифт, звуки, TOML → JSON
+2. Перенос ресурсов из Pyxel: тайлы, постройки, иконки, шрифт, звуки, TOML → JSON ✔
 3. Герой и движение — ощущение как в Pyxel
 4. Уровни: импорт `levels/*.txt` в сцены; Велеград, Лесная тропа, курган
 5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр
@@ -35,9 +35,9 @@
 
 ```
 scenes/    player, enemies, bosses, levels, ui, props, debug
-scripts/   autoload, combat, ai; palette.gd — 16 цветов (класс Pal)
+scripts/   autoload, combat, ai; palette.gd — 16 цветов (Pal), strips.gd — анимации из лент (Strips)
 data/      баланс (TOML и собранный JSON в data/json)
-assets/    sprites, tiles, fonts, audio/sfx, audio/music
+assets/    tiles, sprites (characters, objects, props, icons), backgrounds, fonts, audio/sfx, audio/music
 tests/     автопроверки
 tools/     конвертеры
 ```
@@ -51,6 +51,39 @@ tools/     конвертеры
 | `GameState` | состояние похода: сума, здоровье, сундуки, флаги |
 | `SaveSystem` | сохранение `user://save.json`, формат v2 как в Pyxel-версии |
 | `Audio` | звуки и музыка, M — вкл/выкл музыку |
+
+## Данные (баланс)
+
+Правится `data/*.toml` (описание полей — в комментариях внутри файлов), затем:
+```
+python tools/toml_to_json.py
+```
+Игра читает собранные `data/json/*.json`. При экспорте игры добавить `*.json`
+в фильтр ресурсов, иначе таблицы не попадут в сборку.
+
+## Ресурсы
+
+Сейчас вся графика и звук — временные, выгруженные из Pyxel-версии в масштабе ×2
+(тайл 16 px, герой 48x64). Повторная выгрузка — из репозитория NordSagePixel:
+```
+python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-saga
+```
+
+| Что | Где | Описание |
+|---|---|---|
+| Тайлы | `assets/tiles/tiles.png` | 16x16 в ряд; `tiles.json` — порядок, твёрдые, платформы, колья |
+| Персонажи | `assets/sprites/characters` | слои героя, волк, оружие; `humanoid.json` — кадры, анимации, точки кисти/спины/головы |
+| Объекты | `assets/sprites/objects` | сундуки, камни, врата, стела, указатели, декор |
+| Постройки | `assets/sprites/props` | изба, длинный дом, кузня, лавки…; имя — `вид_ширина` в тайлах |
+| Иконки | `assets/sprites/icons.png` | 16x16 в ряд; порядок — `icons.json` |
+| Фоны | `assets/backgrounds/<лес/город/курган>` | слои параллакса; `backgrounds.json` — скорость и ширина повтора |
+| Шрифт | `assets/fonts/nord_font.fnt` | пиксельный 5x7 с кириллицей, размер 9 (кратные — 18, 27) |
+| Звук | `assets/audio` | эффекты `sfx/*.wav`, зацикленная музыка `music/*.wav` |
+
+Анимации объектов и построек — ленты кадров слева направо; в JSON рядом:
+`frame_w`, `frame_h`, `frames`, `fps` и `anchor` — точка, которая встаёт на
+низ-левый угол тайла в уровне. Новый рисунок с тем же именем и описанием
+подменяет старый без правки кода.
 
 ## Управление
 
@@ -72,3 +105,5 @@ godot --headless --path . res://tests/smoke_test.tscn
 ```
 Печатает `SMOKE OK`. Пока главная сцена — `scenes/debug/input_test.tscn`:
 по F5 видно экран, палитру и подсветку нажатых действий.
+`scenes/debug/asset_gallery.tscn` (F6 в редакторе) — все перенесённые ресурсы:
+фон с параллаксом, постройки и объекты с анимацией, тайлы, иконки, шрифт.

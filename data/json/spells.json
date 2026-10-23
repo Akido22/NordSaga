@@ -1,0 +1,25 @@
+{
+ "rune_fire": {
+  "name": "Огонь Кеназ",
+  "cost": 10,
+  "cast": 14,
+  "color": 9,
+  "damage": 4,
+  "speed": 3.2
+ },
+ "rune_shield": {
+  "name": "Щит Альгиз",
+  "cost": 25,
+  "cast": 10,
+  "color": 10,
+  "duration": 150
+ },
+ "rune_heal": {
+  "name": "Беркана",
+  "cost": 25,
+  "cast": 36,
+  "color": 11,
+  "ground_only": true,
+  "heal": 6
+ }
+}

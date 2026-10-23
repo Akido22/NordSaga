@@ -1,0 +1,69 @@
+{
+ "wolf": {
+  "hp": 4,
+  "contact_damage": 1,
+  "lunge_damage": 3,
+  "knockback": 2.4,
+  "xp": 5,
+  "silver": [
+   1,
+   3
+  ],
+  "stun_frames": 80,
+  "crouch_frames": 20,
+  "lunge_cooldown": 90,
+  "lunge_range": 44,
+  "chase_speed": 1.25,
+  "patrol_speed": 0.5,
+  "sight": 110
+ },
+ "draugr": {
+  "hp": 8,
+  "contact_damage": 1,
+  "strike_damage": 4,
+  "knockback": 1.3,
+  "xp": 10,
+  "silver": [
+   3,
+   5
+  ],
+  "ore_chance": 0.35,
+  "bread_chance": 0.5,
+  "stun_frames": 90,
+  "reach": 18,
+  "windup_frames": 34,
+  "recover_frames": 40,
+  "chase_speed": 0.55,
+  "patrol_speed": 0.3,
+  "sight": 120
+ },
+ "shield_draugr": {
+  "hp": 10,
+  "xp": 14,
+  "silver": [
+   4,
+   6
+  ],
+  "guard": 3,
+  "guard_regen_frames": 120
+ },
+ "archer": {
+  "hp": 4,
+  "contact_damage": 1,
+  "knockback": 2.2,
+  "xp": 8,
+  "silver": [
+   2,
+   4
+  ],
+  "ore_chance": 0.25,
+  "stun_frames": 90,
+  "aim_frames": 44,
+  "shot_cooldown": 50,
+  "arrow_damage": 2,
+  "arrow_speed": 2.8,
+  "reflected_damage": 3,
+  "keep_away": 48,
+  "sight": 150
+ }
+}

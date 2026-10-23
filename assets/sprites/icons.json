@@ -1,0 +1,25 @@
+{
+ "cell": 16,
+ "order": [
+  "knife",
+  "sword",
+  "axe",
+  "spear",
+  "shield",
+  "cap",
+  "helmet",
+  "shirt",
+  "hammer",
+  "lunnitsa",
+  "honey",
+  "bread",
+  "coin",
+  "heart",
+  "empty_heart",
+  "ore",
+  "tincture",
+  "rune_fire",
+  "rune_shield",
+  "rune_heal"
+ ]
+}

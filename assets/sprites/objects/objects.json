@@ -1,0 +1,172 @@
+{
+ "runestone": {
+  "frame_w": 28,
+  "frame_h": 30,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   6,
+   30
+  ]
+ },
+ "runestone_active": {
+  "frame_w": 46,
+  "frame_h": 46,
+  "frames": 20,
+  "fps": 15.0,
+  "anchor": [
+   14,
+   38
+  ]
+ },
+ "chest_closed": {
+  "frame_w": 28,
+  "frame_h": 22,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   6,
+   22
+  ]
+ },
+ "chest_open": {
+  "frame_w": 28,
+  "frame_h": 22,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   6,
+   22
+  ]
+ },
+ "sign": {
+  "frame_w": 20,
+  "frame_h": 24,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   2,
+   24
+  ]
+ },
+ "signpost_left": {
+  "frame_w": 22,
+  "frame_h": 36,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   -12,
+   36
+  ]
+ },
+ "signpost_right": {
+  "frame_w": 22,
+  "frame_h": 36,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   16,
+   36
+  ]
+ },
+ "gate_forest": {
+  "frame_w": 58,
+  "frame_h": 76,
+  "frames": 16,
+  "fps": 7.5,
+  "anchor": [
+   20,
+   76
+  ]
+ },
+ "gate_town": {
+  "frame_w": 90,
+  "frame_h": 140,
+  "frames": 16,
+  "fps": 12.0,
+  "anchor": [
+   36,
+   140
+  ]
+ },
+ "gate_barrow": {
+  "frame_w": 56,
+  "frame_h": 64,
+  "frames": 16,
+  "fps": 7.5,
+  "anchor": [
+   20,
+   64
+  ]
+ },
+ "gate_barrow_locked": {
+  "frame_w": 56,
+  "frame_h": 64,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   20,
+   64
+  ]
+ },
+ "stela": {
+  "frame_w": 96,
+  "frame_h": 176,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   40,
+   176
+  ]
+ },
+ "stela_active": {
+  "frame_w": 146,
+  "frame_h": 176,
+  "frames": 21,
+  "fps": 12.0,
+  "anchor": [
+   64,
+   176
+  ]
+ },
+ "decor_birch": {
+  "frame_w": 50,
+  "frame_h": 102,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   16,
+   102
+  ]
+ },
+ "decor_idol": {
+  "frame_w": 16,
+  "frame_h": 62,
+  "frames": 1,
+  "fps": 60.0,
+  "anchor": [
+   0,
+   62
+  ]
+ },
+ "decor_fire": {
+  "frame_w": 42,
+  "frame_h": 38,
+  "frames": 15,
+  "fps": 30.0,
+  "anchor": [
+   12,
+   28
+  ]
+ },
+ "lost_silver": {
+  "frame_w": 38,
+  "frame_h": 38,
+  "frames": 16,
+  "fps": 15.0,
+  "anchor": [
+   18,
+   26
+  ]
+ }
+}

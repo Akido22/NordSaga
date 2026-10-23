@@ -1,0 +1,17 @@
+{
+ "cell": [
+  32,
+  48
+ ],
+ "grip": [
+  16,
+  40
+ ],
+ "order": [
+  "knife",
+  "sword",
+  "axe",
+  "spear",
+  "hammer"
+ ]
+}

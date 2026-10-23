@@ -2,13 +2,13 @@ extends Node2D
 ## Проверка каркаса: экран 480x270, чёткие пиксели, все действия ввода.
 ## Нажатые действия подсвечиваются золотом.
 
-const FONT_SIZE := 8
+const FONT_SIZE := 9
 
 var _font: Font
 
 
 func _ready() -> void:
-	_font = ThemeDB.fallback_font
+	_font = preload("res://assets/fonts/nord_font.fnt")
 
 
 func _process(_delta: float) -> void:

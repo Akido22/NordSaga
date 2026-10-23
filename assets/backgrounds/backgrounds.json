@@ -1,0 +1,73 @@
+{
+ "forest": [
+  {
+   "layer": "sky",
+   "parallax": 0.0,
+   "width": 1024
+  },
+  {
+   "layer": "stars",
+   "parallax": 0.03,
+   "width": 1024
+  },
+  {
+   "layer": "aurora",
+   "parallax": 0.08,
+   "width": 1024
+  },
+  {
+   "layer": "far",
+   "parallax": 0.15,
+   "width": 1024
+  },
+  {
+   "layer": "near",
+   "parallax": 0.3,
+   "width": 1024
+  },
+  {
+   "layer": "pines",
+   "parallax": 0.5,
+   "width": 1024
+  }
+ ],
+ "town": [
+  {
+   "layer": "sky",
+   "parallax": 0.0,
+   "width": 1024
+  },
+  {
+   "layer": "stars",
+   "parallax": 0.03,
+   "width": 1024
+  },
+  {
+   "layer": "far",
+   "parallax": 0.15,
+   "width": 1024
+  },
+  {
+   "layer": "near",
+   "parallax": 0.3,
+   "width": 1024
+  },
+  {
+   "layer": "roofs",
+   "parallax": 0.55,
+   "width": 1024
+  }
+ ],
+ "barrow": [
+  {
+   "layer": "wall",
+   "parallax": 0.6,
+   "width": 1008
+  },
+  {
+   "layer": "roots",
+   "parallax": 0.8,
+   "width": 1024
+  }
+ ]
+}

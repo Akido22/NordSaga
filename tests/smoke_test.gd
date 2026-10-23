@@ -2,6 +2,7 @@ extends Node
 ## Проверка каркаса без участия человека.
 ## Запуск: godot --headless --path . res://tests/smoke_test.tscn
 ## Снимок экрана (без --headless): ... res://tests/smoke_test.tscn -- --shot=C:/путь/shot.png
+##   [--scene=res://scenes/debug/asset_gallery.tscn]  (по умолчанию — проверка ввода)
 
 var failures: Array[String] = []
 
@@ -11,6 +12,7 @@ func _ready() -> void:
 	_check_actions()
 	await _check_key_mapping()
 	_check_save()
+	_check_assets()
 	var shot := _arg("shot")
 	if shot:
 		await _screenshot(shot)
@@ -102,9 +104,36 @@ func _check_save() -> void:
 	GameState.reset()
 
 
+func _check_assets() -> void:
+	_expect(Data.tables.size() == 8, "таблиц данных %d, ждём 8" % Data.tables.size())
+	_expect(Data.table("items").has("knife"), "в items нет ножа")
+	_expect(load("res://assets/fonts/nord_font.fnt") is FontFile, "шрифт не загрузился")
+	for id in ["jump", "swing", "hit", "parry", "roar", "fire"]:
+		_expect(ResourceLoader.exists("res://assets/audio/sfx/%s.wav" % id), "нет звука " + id)
+	for id in ["forest", "town", "boss"]:
+		var m: AudioStreamWAV = load("res://assets/audio/music/%s.wav" % id)
+		_expect(m != null and m.loop_mode == AudioStreamWAV.LOOP_FORWARD, "музыка не зациклена: " + id)
+	for dir in ["res://assets/sprites/objects", "res://assets/sprites/props"]:
+		for name in Strips.names(dir):
+			var m := Strips.meta(dir, name)
+			var tex: Texture2D = load("%s/%s.png" % [dir, name])
+			_expect(tex.get_width() == m.frame_w * m.frames and tex.get_height() == m.frame_h,
+					"размер ленты не совпадает: " + name)
+	var bgs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/backgrounds/backgrounds.json"))
+	for st in ["forest", "town", "barrow"]:
+		_expect(bgs.has(st), "нет фона " + st)
+		for l in bgs.get(st, []):
+			_expect(ResourceLoader.exists("res://assets/backgrounds/%s/%s.png" % [st, l.layer]), "нет слоя %s/%s" % [st, l.layer])
+
+
 func _screenshot(path: String) -> void:
-	add_child(load("res://scenes/debug/input_test.tscn").instantiate())
-	for i in 5:
+	var scene := _arg("scene")
+	var packed: PackedScene = load(scene if scene else "res://scenes/debug/input_test.tscn")
+	_expect(packed != null, "сцена не загрузилась: " + scene)
+	if packed == null:
+		return
+	add_child(packed.instantiate())
+	for i in 30:
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	var err := get_viewport().get_texture().get_image().save_png(path)

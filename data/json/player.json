@@ -1,0 +1,32 @@
+{
+ "movement": {
+  "max_speed": 1.35,
+  "jump_velocity": 4.1,
+  "coyote_frames": 6,
+  "jump_buffer": 7
+ },
+ "stamina": {
+  "regen": 1.1,
+  "delay": 35,
+  "exhaust_delay": 70,
+  "roll_cost": 28,
+  "heavy_cost": 32,
+  "plunge_cost": 14
+ },
+ "combat": {
+  "parry_window": 10,
+  "block_cooldown": 14,
+  "charge_frames": 20,
+  "combo_max": 3,
+  "invuln_frames": 70,
+  "roll_frames": 22,
+  "roll_iframes": [
+   2,
+   16
+  ],
+  "input_buffer": 8
+ },
+ "magic": {
+  "mana_regen": 0.03
+ }
+}

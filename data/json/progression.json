@@ -1,0 +1,51 @@
+{
+ "base": {
+  "hp": 10,
+  "attack": 1,
+  "defense": 0,
+  "stamina": 100,
+  "mana": 30
+ },
+ "levels": {
+  "max_level": 20,
+  "xp_base": 20,
+  "xp_step": 15,
+  "points_per_level": 1
+ },
+ "stats": {
+  "strength": 1,
+  "endurance": 12,
+  "vitality": 2,
+  "spirit": 8
+ },
+ "forge": {
+  "max_upgrade": 3,
+  "cost": [
+   [
+    15,
+    1
+   ],
+   [
+    30,
+    2
+   ],
+   [
+    50,
+    3
+   ]
+  ]
+ },
+ "trade": {
+  "sell_rate": 0.4
+ },
+ "start": {
+  "weapon": "knife",
+  "armor": "shirt",
+  "items": [
+   [
+    "bread",
+    2
+   ]
+  ]
+ }
+}

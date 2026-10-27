@@ -19,6 +19,7 @@ var _title_bg: Node2D
 var _title_cam: Camera2D
 var _title_dir := 1.0
 var _fade_canvas: Node2D
+var touch: TouchControls
 
 
 func _ready() -> void:
@@ -28,6 +29,9 @@ func _ready() -> void:
 	_fade_canvas = Node2D.new()
 	_fade_canvas.draw.connect(_draw_fade)
 	layer.add_child(_fade_canvas)
+	touch = TouchControls.new()
+	add_child(touch)
+	get_tree().quit_on_go_back = false  # «Назад» на Android — пауза, а не выход
 	show_title()
 
 
@@ -132,6 +136,30 @@ func _physics_process(_delta: float) -> void:
 	elif world.finished:
 		Audio.sfx("save")
 		open_overlay(VictoryMenu.new())
+
+
+## Телефон: свернули приложение — пауза; системная кнопка «Назад» — как Esc.
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED:
+			if touch == null or not touch.enabled:
+				return  # на ПК переключение окон игру не останавливает
+			touch.release_all()
+			if world and overlay == null and fade_out == 0 and not world.player.dead:
+				open_overlay(PauseMenu.new())
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			if overlay != null:
+				_tap("back")
+			elif world:
+				_tap("pause")
+
+
+## Нажать и отпустить действие (на следующем кадре), как клавишу.
+func _tap(action: String) -> void:
+	Input.action_press(action)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Input.action_release(action)
 
 
 func _pan_title() -> void:

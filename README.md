@@ -28,7 +28,7 @@
 6. Враги и ярл Хрёрек ✔
 7. Прокачка, руны, жители, лавки, кузница ✔
 8. Интерфейс и сохранение: главное меню, пауза, сума, смерть, победа, затемнения ✔
-9. Android: экранное управление, экспорт APK
+9. Android: экранное управление, экспорт APK — 9а (управление, пресет экспорта) ✔, сборка и проверка на телефоне
 10. Новая графика
 
 ## Структура
@@ -41,7 +41,8 @@ scripts/   autoload; physics (TileBody — тайловая физика); world
            JarlBoss + Shockwave, Dummy; Looks — облики врагов);
            characters (HumanoidLook — гуманоид из слоёв);
            magic (Spells — действие рун, Fireball); ui (UiKit, HudLayer, MenuList, окна Overlay:
-           TitleMenu, PauseMenu, InventoryMenu, ControlsMenu, DeathMenu, VictoryMenu,
+           TitleMenu, PauseMenu, InventoryMenu, ControlsMenu, DeathMenu, VictoryMenu;
+           TouchControls — экранный стик и кнопки;
            NpcMenu, TradeMenu, RestMenu); shaders (перекраска по палитре);
            inventory.gd (Inventory — сума, снаряжение, уровень, заточка, руны), items.gd (Items),
            palette.gd (Pal), strips.gd (Strips — анимации из лент), icons.gd (Icons)
@@ -134,6 +135,29 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 | В суме: выбросить | R / Delete | Y |
 | Во весь экран | F11 | |
 
+## Android
+
+На телефоне (и на ПК с ключом `-- --touch`, мышь вместо пальца) поверх игры —
+плавающий стик слева и кнопки справа: прыжок, удар, кувырок, блок, чары, смена
+руны, лечение, сума, пауза. Кнопки двойные, как на геймпаде: прыжок — «выбор» в
+окнах, кувырок — «назад», чары — «выбросить». Стик вверх — говорить и открывать,
+вниз + прыжок — спрыгнуть с доски. Свернули приложение — пауза; системная
+«Назад» — как Esc.
+
+Сборка APK (пресет «Android» в `export_presets.cfg`, файл — `build/android/NordSaga.apk`):
+1. Шаблоны экспорта: Godot → Editor → Manage Export Templates → Download and Install.
+2. Android SDK (Android Studio или command-line tools) с platform-tools,
+   build-tools и платформой; JDK 17 уже стоит.
+3. Godot → Editor Settings → Export → Android: пути к SDK и JDK, debug keystore
+   (уже прописан).
+4. Project → Export → Android → Export Project (debug), или:
+   `godot --headless --path . --export-debug "Android" build/android/NordSaga.apk`.
+5. Скопировать APK на телефон и установить (разрешить установку из неизвестных
+   источников).
+
+Код проекта — только GDScript, поэтому для сборки можно взять и обычный
+(не .NET) Godot 4.7.2 с обычными шаблонами — APK выйдет меньше.
+
 ## Проверка
 
 ```
@@ -144,6 +168,7 @@ godot --headless --path . res://tests/combat_test.tscn
 godot --headless --path . res://tests/enemies_test.tscn
 godot --headless --path . res://tests/progress_test.tscn
 godot --headless --path . res://tests/ui_test.tscn
+godot --headless --path . res://tests/touch_test.tscn
 ```
 - `smoke_test` — настройки, ввод, сохранение, ресурсы (`SMOKE OK`).
 - `movement_test` — движение героя кадр в кадр против Pyxel-версии
@@ -166,6 +191,8 @@ godot --headless --path . res://tests/ui_test.tscn
   (надеть меч) → пауза (сохранить) → гибель (серебро остаётся на месте) → к месту
   сохранения → подобрать серебро → конец пути → Велеград → переход с затемнением →
   пауза → главное меню (`UI OK`).
+- `touch_test` — экранное управление: стик, кнопки, мультитач, касание в пикселях
+  окна, прыжок = «выбор» в меню, кувырок = «назад» (`TOUCH OK`).
 
 Снимок любой сцены (без `--headless`), можно с удержанием действий:
 ```

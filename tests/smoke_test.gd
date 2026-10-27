@@ -126,6 +126,14 @@ func _check_assets() -> void:
 			var tex: Texture2D = load("%s/%s.png" % [dir, name])
 			_expect(tex.get_width() == m.frame_w * m.frames and tex.get_height() == m.frame_h,
 					"размер ленты не совпадает: " + name)
+	# Риг героя (art/hero/hero.aseprite -> tools/import_hero.py): все анимации и листы облика.
+	var hero := HumanoidLook.data(Player.RIG)
+	for anim in ["idle", "run", "jump", "fall", "roll", "block", "attack", "attack2", "heavy", "plunge",
+			"cast", "hurt", "death"]:
+		_expect(hero.anims.has(anim) and not hero.anims[anim].is_empty(), "у героя нет анимации " + anim)
+	for sheet in ["legs", "torso_plain", "torso_shirt", "torso_leather", "torso_mail", "head", "helmet_cap",
+			"helmet_shishak"]:
+		_expect(ResourceLoader.exists("%s/%s.png" % [HumanoidLook.RIGS.hero.dir, sheet]), "нет листа героя " + sheet)
 	var bgs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/backgrounds/backgrounds.json"))
 	for st in ["forest", "town", "barrow"]:
 		_expect(bgs.has(st), "нет фона " + st)

@@ -10,8 +10,10 @@ const JUMP_CUT := -3.2  # прыжок отпущен — подъём обры�
 const ROLL_SPEED := 5.4
 const PLUNGE_SPEED := 8.8
 const PLUNGE_BOUNCE := -6.8
-const ARMOR_SHEETS := {"shirt": "hero_torso_shirt", "leather": "hero_torso_leather", "mail": "hero_torso_mail"}
-const HELMET_SHEETS := {"cap": "hero_helmet_cap", "shishak": "hero_helmet_shishak"}
+## Облик героя — свой риг (assets/sprites/hero, рисуется в art/hero/hero.aseprite).
+const RIG := "hero"
+const ARMOR_SHEETS := {"shirt": "torso_shirt", "leather": "torso_leather", "mail": "torso_mail"}
+const HELMET_SHEETS := {"cap": "helmet_cap", "shishak": "helmet_shishak"}
 ## Кулак — когда оружия нет.
 const FIST := {"id": "fist", "icon": "", "atk": 0, "reach": 18, "swing": 14, "stamina": 8}
 
@@ -99,6 +101,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	look.rig = RIG
 	look.position = Vector2(w / 2, h)
 	_fx = Node2D.new()
 	_fx.draw.connect(_draw_fx)
@@ -123,8 +126,7 @@ func rebuild_look() -> void:
 static func look_layers() -> Array:
 	var armor := GameState.equipped("armor")
 	var helmet := GameState.equipped("helmet")
-	var layers := [["hero_legs", null], [ARMOR_SHEETS.get(armor, "hero_torso_plain"), null],
-			["hero_head_male", null]]
+	var layers := [["legs", null], [ARMOR_SHEETS.get(armor, "torso_plain"), null], ["head", null]]
 	if HELMET_SHEETS.has(helmet):
 		layers.append([HELMET_SHEETS[helmet], null])
 	return layers
@@ -618,30 +620,30 @@ func heal(amount: int) -> int:
 # ------------------------------------------------------------ отрисовка
 func frame() -> int:
 	if dead:
-		return HumanoidLook.anim_at("death", dead_t / 40.0)
+		return HumanoidLook.anim_at("death", dead_t / 40.0, 0, RIG)
 	match state:
 		"roll":
-			return HumanoidLook.anim_at("roll", 1.0 - float(state_t) / roll_time)
+			return HumanoidLook.anim_at("roll", 1.0 - float(state_t) / roll_time, 0, RIG)
 		"attack":
 			var p := attack_progress()
 			if attack_kind == "heavy":
-				return HumanoidLook.anim_at("heavy", p, 1)
-			return HumanoidLook.anim_at("attack2" if attack_kind == "light" and combo == 1 else "attack", p)
+				return HumanoidLook.anim_at("heavy", p, 1, RIG)
+			return HumanoidLook.anim_at("attack2" if attack_kind == "light" and combo == 1 else "attack", p, 0, RIG)
 		"charge":
-			return HumanoidLook.anim("heavy", 0)
+			return HumanoidLook.anim("heavy", 0, RIG)
 		"plunge":
-			return HumanoidLook.anim("plunge")
+			return HumanoidLook.anim("plunge", 0, RIG)
 		"cast":
-			return HumanoidLook.anim("cast", anim_t / 6)
+			return HumanoidLook.anim("cast", anim_t / 6, RIG)
 		"block":
-			return HumanoidLook.anim("block")
+			return HumanoidLook.anim("block", 0, RIG)
 	if state == "stun" or flash:
-		return HumanoidLook.anim("hurt")
+		return HumanoidLook.anim("hurt", 0, RIG)
 	if not on_ground:
-		return HumanoidLook.anim("jump" if vy < 0 else "fall")
+		return HumanoidLook.anim("jump" if vy < 0 else "fall", 0, RIG)
 	if absf(vx) > 0.4 and state == "move":
-		return HumanoidLook.anim("run", anim_t / 5)
-	return HumanoidLook.anim("idle", Engine.get_physics_frames() / 15)
+		return HumanoidLook.anim("run", anim_t / 5, RIG)
+	return HumanoidLook.anim("idle", Engine.get_physics_frames() / 15, RIG)
 
 
 func sync() -> void:
@@ -667,7 +669,7 @@ func _draw_fx() -> void:
 	if state == "stun" and state_t > 14:
 		_draw_stun_stars()
 	if state == "cast" and cast_spell:
-		var hand := HumanoidLook.anchor(f, "hand", w / 2, h, facing)
+		var hand := HumanoidLook.anchor(f, "hand", w / 2, h, facing, RIG)
 		var r := 2.0 + (anim_t / 3) % 3 * 2
 		var at := hand + Vector2(facing * 4, 0)
 		_fx.draw_circle(at, r, Pal.BY_INDEX[int(Spells.spell(cast_spell).color)])
@@ -690,11 +692,11 @@ func _draw_shield_aura() -> void:
 
 ## Дуга-след за клинком (в локальных координатах героя).
 func _draw_slash(f: int) -> void:
-	var angle = HumanoidLook.info(f).weapon
+	var angle = HumanoidLook.info(f, RIG).weapon
 	if angle == null:
 		return
 	var heavy := attack_kind == "heavy"
-	var hand := HumanoidLook.anchor(f, "hand", w / 2, h, facing)
+	var hand := HumanoidLook.anchor(f, "hand", w / 2, h, facing, RIG)
 	var r := 28.0 + (8.0 if heavy else 0.0)
 	var back := 1 if attack_kind == "light" and combo == 1 else -1
 	for i in (12 if heavy else 8):

@@ -29,7 +29,7 @@
 7. Прокачка, руны, жители, лавки, кузница ✔
 8. Интерфейс и сохранение: главное меню, пауза, сума, смерть, победа, затемнения ✔
 9. Android: экранное управление, экспорт APK — 9а (управление, пресет экспорта) ✔, сборка и проверка на телефоне
-10. Новая графика
+10. Новая графика — начата: герой рисуется в Aseprite (`art/hero`)
 
 ## Структура
 
@@ -47,7 +47,8 @@ scripts/   autoload; physics (TileBody — тайловая физика); world
            inventory.gd (Inventory — сума, снаряжение, уровень, заточка, руны), items.gd (Items),
            palette.gd (Pal), strips.gd (Strips — анимации из лент), icons.gd (Icons)
 data/      баланс (TOML и собранный JSON в data/json), levels/*.txt — карты из Pyxel-версии
-assets/    tiles, sprites (characters, objects, props, icons), backgrounds, fonts, audio/sfx, audio/music
+assets/    tiles, sprites (hero, characters, objects, props, icons), backgrounds, fonts, audio/sfx, audio/music
+art/       исходники графики (Godot их не видит): hero/hero.aseprite — герой
 tests/     автопроверки; levels — площадки для сверки врагов (duel_*)
 tools/     конвертеры
 ```
@@ -96,6 +97,19 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 `frame_w`, `frame_h`, `frames`, `fps` и `anchor` — точка, которая встаёт на
 низ-левый угол тайла в уровне. Новый рисунок с тем же именем и описанием
 подменяет старый без правки кода.
+
+### Герой — из Aseprite
+
+Герой рисуется в `art/hero/hero.aseprite` (слои — ноги, торсы, голова, шлемы;
+метки — анимации; слой `anchors` — точки кисти, спины, головы). Памятка — 
+`art/hero/README.md`. В игру:
+```
+python tools/import_hero.py
+```
+-> `assets/sprites/hero/*.png` и `hero.json` (риг «hero» в `HumanoidLook`).
+Враги и жители — на своих листах `assets/sprites/characters` (риг «humanoid»),
+перерисовка героя их не трогает. Новый шаблон из текущих листов:
+`python tools/hero_template.py --force` (перезапишет файл художника!).
 
 ## Локации
 

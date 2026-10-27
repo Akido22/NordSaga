@@ -21,6 +21,7 @@ var figure: HumanoidLook
 func _ready() -> void:
 	super._ready()
 	figure = HumanoidLook.new()
+	figure.rig = Player.RIG
 	figure.zoom = 2.0
 	figure.position = Vector2(FIGURE.get_center().x, FIGURE.end.y - 4)
 	add_child(figure)
@@ -148,7 +149,7 @@ func draw_ui(c: CanvasItem) -> void:
 	c.draw_circle(FIGURE.get_center() + Vector2(0, 6), 44, Color(Pal.DUSK, 0.35))
 	var wpn := inv.equipped("weapon")
 	var shield := inv.equipped("shield")
-	figure.show_frame(HumanoidLook.anim("idle", t / 15), 1, null if wpn.is_empty() else wpn,
+	figure.show_frame(HumanoidLook.anim("idle", t / 15, Player.RIG), 1, null if wpn.is_empty() else wpn,
 			null if shield.is_empty() else shield)
 	for slot in EQUIP_POS:
 		var at: Vector2 = EQUIP_POS[slot]

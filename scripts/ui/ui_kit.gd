@@ -55,3 +55,21 @@ static func wrap(s: String, max_w: float, size := SIZE) -> PackedStringArray:
 				cur = cand
 		out.append(cur)
 	return out
+
+
+## Тёмная полоса во всю ширину экрана — подложка под крупный текст.
+static func backdrop(c: CanvasItem, y: float, h: float, line := Pal.GOLD) -> void:
+	var w := c.get_viewport_rect().size.x
+	c.draw_rect(Rect2(0, y, w, h), Pal.BLACK)
+	c.draw_rect(Rect2(0, y, w, 1), line)
+	c.draw_rect(Rect2(0, y + h - 1, w, 1), line)
+
+
+## Полоса из ромбов, как на вышивке рушника.
+static func ornament_band(c: CanvasItem, x: float, y: float, w: float, c1 := Pal.RED, c2 := Pal.GOLD) -> void:
+	c.draw_rect(Rect2(x, y - 4, w, 1), c2)
+	c.draw_rect(Rect2(x, y + 4, w, 1), c2)
+	var i := 0
+	for cx in range(int(x) + 4, int(x + w) - 3, 8):
+		rhombus(c, cx, y, 2, c1 if i % 2 == 0 else c2)
+		i += 1

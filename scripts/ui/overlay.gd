@@ -1,7 +1,8 @@
 class_name Overlay
 extends CanvasLayer
 ## Окно поверх игры: мир стоит, пока окно открыто. Рисование — в draw_ui(c),
-## логика — в update() раз в кадр. close() возвращает в игру.
+## логика — в update() раз в кадр. close() возвращает в предыдущее окно или в игру.
+## Окна складываются стопкой (пауза -> сума): нижнее стоит и видно под верхним.
 
 var game  # корень игры (scripts/game.gd): открывает и закрывает окна
 var world: World
@@ -9,6 +10,8 @@ var msg := ""
 var msg_col := Pal.GOLD
 var msg_t := 0
 var t := 0
+## Кадров до первого update(): нажатие, открывшее окно, не должно сработать в нём же.
+var skip := 1
 var _canvas: Node2D
 
 
@@ -28,7 +31,10 @@ func _physics_process(_delta: float) -> void:
 	t += 1
 	if msg_t > 0:
 		msg_t -= 1
-	update()
+	if skip > 0:
+		skip -= 1
+	else:
+		update()
 	_canvas.queue_redraw()
 
 
@@ -51,8 +57,8 @@ func close() -> void:
 
 
 ## Затемнение мира под окном.
-func dim(c: CanvasItem, amount: float) -> void:
-	c.draw_rect(Rect2(Vector2.ZERO, c.get_viewport_rect().size), Color(Pal.BLACK, amount))
+static func dim(c: CanvasItem, amount: float, col := Pal.BLACK) -> void:
+	c.draw_rect(Rect2(Vector2.ZERO, c.get_viewport_rect().size), Color(col, amount))
 
 
 ## Табличка с заголовком по центру.
@@ -62,10 +68,13 @@ static func title_plate(c: CanvasItem, cx: float, y: float, text: String, col :=
 	UiKit.text_center(c, cx, y + 5, text, col, Pal.NIGHT)
 
 
-## Ячейка с иконкой предмета x2.
-static func item_box(c: CanvasItem, x: float, y: float, size: float, it: Dictionary, count := 0) -> void:
+## Ячейка с иконкой предмета x2; selected — мигающая рамка выбора (t — счётчик кадров).
+static func item_box(c: CanvasItem, x: float, y: float, size: float, it: Dictionary, count := 0,
+		selected := false, t := 0) -> void:
 	c.draw_rect(Rect2(x, y, size, size), Pal.BLACK)
-	c.draw_rect(Rect2(x + 0.5, y + 0.5, size - 1, size - 1), Pal.STONE, false, 1.0)
+	c.draw_rect(Rect2(x + 0.5, y + 0.5, size - 1, size - 1), Pal.GOLD if selected else Pal.STONE, false, 1.0)
+	if selected:
+		c.draw_rect(Rect2(x - 0.5, y - 0.5, size + 1, size + 1), Pal.RED if (t / 15) % 2 else Pal.GOLD, false, 1.0)
 	if not it.is_empty():
 		var off := (size - 32) / 2
 		c.draw_texture_rect(Icons.of(it), Rect2(x + off, y + off, 32, 32), false)

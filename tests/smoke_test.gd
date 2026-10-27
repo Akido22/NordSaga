@@ -7,7 +7,9 @@ extends Node
 ##   [--level=barrow] [--spawn=entry]  — для сцены мира: какая локация и точка появления
 ##   [--equip=weapon:sword,shield:shield_round]  — надеть вещи перед снимком
 ##   [--give=ore:3,sword:1] [--silver=120] [--xp=90]  — выдать вещи, серебро, опыт
-##   [--overlay=rest | npc:merchant | trade:smith:2]  — для game.tscn: открыть окно перед снимком
+##   [--overlay=rest | npc:merchant | trade:smith:2 | pause | inventory | controls | death | victory]
+##     — для game.tscn: открыть окно перед снимком
+##   [--title]  — для game.tscn: остаться в главном меню (по умолчанию — новая игра)
 
 var failures: Array[String] = []
 
@@ -137,14 +139,20 @@ func _screenshot(path: String) -> void:
 	_expect(packed != null, "сцена не загрузилась: " + scene)
 	if packed == null:
 		return
-	for pair in _arg("equip").split(",", false):
-		GameState.inv.equipment[pair.get_slice(":", 0)] = pair.get_slice(":", 1)
 	var node := packed.instantiate()
 	if node is World and _arg("level"):
 		node.level_name = _arg("level")
 		node.spawn = _arg("spawn")
 	add_child(node)
-	# После add_child: корень игры при запуске начинает новую игру.
+	if node.has_method("new_game") and not _flag("title"):
+		node.new_game()
+	# После новой игры: она сбрасывает суму.
+	for pair in _arg("equip").split(",", false):
+		GameState.inv.equipment[pair.get_slice(":", 0)] = pair.get_slice(":", 1)
+	if node is World:
+		node.player.rebuild_look()
+	elif "world" in node and node.world:
+		node.world.player.rebuild_look()
 	for pair in _arg("give").split(",", false):
 		GameState.inv.add(pair.get_slice(":", 0), int(pair.get_slice(":", 1)))
 	GameState.inv.silver += int(_arg("silver"))
@@ -163,7 +171,12 @@ func _screenshot(path: String) -> void:
 			"rest": node.open_overlay(RestMenu.new(node.world.save_points[0]))
 			"npc": node.open_overlay(NpcMenu.new(node.world.npcs.filter(func(n): return n.npc_id == spec[1])[0]))
 			"trade": node.open_overlay(TradeMenu.new(spec[1], int(spec[2]) if spec.size() > 2 else 0))
-		for i in 3:
+			"pause": node.open_overlay(PauseMenu.new())
+			"inventory": node.open_overlay(InventoryMenu.new())
+			"controls": node.open_overlay(ControlsMenu.new())
+			"death": node.open_overlay(DeathMenu.new())
+			"victory": node.open_overlay(VictoryMenu.new())
+		for i in (60 if spec[0] in ["death", "victory"] else 3):
 			await get_tree().physics_frame
 	# Действия держатся до самого снимка, иначе на нём будет уже следующая поза.
 	await RenderingServer.frame_post_draw
@@ -177,3 +190,7 @@ func _arg(key: String) -> String:
 		if a.begins_with("--%s=" % key):
 			return a.split("=", true, 1)[1]
 	return ""
+
+
+func _flag(key: String) -> bool:
+	return ("--" + key) in OS.get_cmdline_user_args()

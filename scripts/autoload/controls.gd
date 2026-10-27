@@ -27,6 +27,7 @@ const BINDINGS := {
 	"back": {"keys": [KEY_ESCAPE, KEY_BACKSPACE, KEY_X], "pad": [JOY_BUTTON_B]},
 	"drop": {"keys": [KEY_R, KEY_DELETE], "pad": [JOY_BUTTON_Y]},
 	"toggle_music": {"keys": [KEY_M]},
+	"fullscreen": {"keys": [KEY_F11]},
 }
 
 ## Подписи для экранов управления и отладки.
@@ -35,7 +36,7 @@ const NAMES := {
 	"jump": "Прыжок", "attack": "Удар", "block": "Блок", "roll": "Кувырок",
 	"heal": "Лечение", "cast": "Чары", "next_rune": "Смена руны",
 	"inventory": "Сума", "pause": "Пауза", "confirm": "Выбор", "back": "Назад",
-	"drop": "Выбросить", "toggle_music": "Музыка",
+	"drop": "Выбросить", "toggle_music": "Музыка", "fullscreen": "Во весь экран",
 }
 
 
@@ -62,6 +63,12 @@ func _register(action: String, bind: Dictionary) -> void:
 		motion.axis = bind["axis"][0]
 		motion.axis_value = bind["axis"][1]
 		InputMap.action_add_event(action, motion)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("fullscreen"):
+		var full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
 ## Подмена ввода для автотестов: {"held": {действие: true}, "pressed": {действие: true}}.

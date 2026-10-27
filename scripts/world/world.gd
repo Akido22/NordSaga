@@ -21,7 +21,8 @@ const ENEMY_OFFSETS := {"wolf": -6.0, "draugr": 0.0, "shield_draugr": 0.0, "arch
 @export var level_name := "town"
 ## Точка появления (имя из Spawns); пусто — Start.
 @export var spawn := ""
-## Пока нет экрана смерти (шаг 8): павший герой встаёт на старте.
+## Песочница и сцены без корня игры: павший герой встаёт на старте.
+## В игре (game.gd) — false: после гибели открывается экран смерти.
 var respawn_after_death := true
 ## false — без врагов (сверка одного движения героя).
 var spawn_enemies := true
@@ -65,6 +66,7 @@ var texts := []  # всплывающие надписи [x, y, текст, цв
 var exit_to = null
 var finished := false
 var ui_request = null  # [вид, объект] — окно, которое надо открыть после кадра
+var lost_pile: LostSilver = null  # серебро, оброненное при прошлой гибели
 
 var _overlay: Node2D  # подсказки и надписи в мире — поверх всего
 
@@ -84,6 +86,11 @@ func _ready() -> void:
 		player.place(level.spawn_point(spawn if spawn else str(GameState.spawn if GameState.spawn else "")))
 	GameState.pos = null
 	GameState.hp = clampi(GameState.hp, 1, GameState.max_hp())
+	var lost = GameState.lost_silver
+	if lost is Dictionary and lost.get("level") == level_name and int(lost.get("amount", 0)) > 0:
+		lost_pile = LostSilver.new(float(lost.x), float(lost.y) + player.h, int(lost.amount))
+		lost_pile.z_index = 8
+		add_child(lost_pile)
 
 	effects = Effects.new()
 	effects.z_index = 20
@@ -258,6 +265,14 @@ func _interactions() -> void:
 	for ex in edge_exits:
 		if exit_to == null and ex.overlaps(p.x, p.y, p.w, p.h):
 			leave(ex.target, ex.spawn)
+	if lost_pile != null and lost_pile.overlaps(p.x, p.y, p.w, p.h):
+		GameState.inv.silver += lost_pile.amount
+		toast("Серебро возвращено: %d" % lost_pile.amount, Pal.GOLD)
+		Audio.sfx("coin")
+		sparks(lost_pile.x + 10, lost_pile.y, 12)
+		GameState.lost_silver = null
+		lost_pile.queue_free()
+		lost_pile = null
 
 
 func _respawn() -> void:
@@ -343,6 +358,18 @@ func gain_xp(amount: int, x: float, y: float) -> void:
 	if levels:
 		toast("Новый уровень: %d! Поклонись Стеле или камню" % GameState.inv.level, Pal.GOLD)
 		Audio.sfx("save")
+
+
+## Серебро остаётся на месте гибели; в сохранении пропадает только оно.
+func on_player_died() -> void:
+	var amount := GameState.inv.silver
+	var lost = {"level": level_name, "x": player.safe_x, "y": player.safe_y, "amount": amount} if amount > 0 else null
+	GameState.lost_silver = lost
+	var data = SaveSystem.load_data()
+	if data != null:
+		data["inventory"]["silver"] = 0
+		data["lost_silver"] = lost
+		SaveSystem.write(data)
 
 
 func on_enemy_killed(e: Enemy) -> void:
@@ -486,7 +513,6 @@ func save_game() -> bool:
 func leave(target: String, spawn_name: String) -> void:
 	if target == "end":
 		finished = true
-		toast("Конец пути. Экран победы — шаг 8", Pal.GOLD)
 		return
 	exit_to = [target, spawn_name]
 	exit_requested.emit(target, spawn_name)

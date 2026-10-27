@@ -18,6 +18,7 @@ func _ready() -> void:
 
 	game = load("res://scenes/game.tscn").instantiate()
 	add_child(game)
+	game.new_game()
 	_grab_world()
 	_expect(world.level_name == "town", "старт не в городе")
 	_expect(world.npcs.size() == 6, "в городе жителей %d, ждём 6" % world.npcs.size())
@@ -123,8 +124,12 @@ func _go(exit: LevelObject, level_name: String, spawn: Vector2i) -> void:
 		_tick(1)
 	else:
 		_use(exit)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Переход идёт через затемнение: ждём, пока корень игры создаст новый мир.
+	var old := world
+	for i in 60:
+		await get_tree().physics_frame
+		if game.world != old:
+			break
 	_grab_world()
 	_expect(world.level_name == level_name, "ждали «%s», попали в «%s»" % [level_name, world.level_name])
 	var p := world.player

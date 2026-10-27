@@ -27,20 +27,21 @@
 5. Бой: выносливость, комбо, тяжёлый удар, кувырок, блок и парирование, стоп-кадр ✔
 6. Враги и ярл Хрёрек ✔
 7. Прокачка, руны, жители, лавки, кузница ✔
-8. Интерфейс и сохранение — полное прохождение
+8. Интерфейс и сохранение: главное меню, пауза, сума, смерть, победа, затемнения ✔
 9. Android: экранное управление, экспорт APK
 10. Новая графика
 
 ## Структура
 
 ```
-scenes/    game.tscn (корень: смена локаций), world, levels (town, test_level, barrow, arena),
+scenes/    game.tscn (корень: меню, смена локаций, окна), world, levels (town, test_level, barrow, arena),
            player, enemies, bosses, ui, debug
 scripts/   autoload; physics (TileBody — тайловая физика); world (World, Level, Effects);
-           objects (объекты уровня); enemies (Enemy; Wolf, Draugr, ShieldDraugr, Archer + Arrow,
+           objects (объекты уровня, LostSilver — серебро на месте гибели); enemies (Enemy; Wolf, Draugr, ShieldDraugr, Archer + Arrow,
            JarlBoss + Shockwave, Dummy; Looks — облики врагов);
            characters (HumanoidLook — гуманоид из слоёв);
            magic (Spells — действие рун, Fireball); ui (UiKit, HudLayer, MenuList, окна Overlay:
+           TitleMenu, PauseMenu, InventoryMenu, ControlsMenu, DeathMenu, VictoryMenu,
            NpcMenu, TradeMenu, RestMenu); shaders (перекраска по палитре);
            inventory.gd (Inventory — сума, снаряжение, уровень, заточка, руны), items.gd (Items),
            palette.gd (Pal), strips.gd (Strips — анимации из лент), icons.gd (Icons)
@@ -54,7 +55,7 @@ tools/     конвертеры
 
 | | |
 |---|---|
-| `Controls` | действия ввода: клавиатура (физические клавиши — WASD работает и на русской раскладке) и геймпад |
+| `Controls` | действия ввода: клавиатура (физические клавиши — WASD работает и на русской раскладке) и геймпад; F11 — во весь экран |
 | `Data` | таблицы баланса из `data/json` |
 | `GameState` | состояние похода: сума (`inv`), здоровье, сундуки, флаги |
 | `SaveSystem` | сохранение `user://save.json`, формат v2 как в Pyxel-версии |
@@ -130,6 +131,8 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 | Сума / пауза | I / Tab, Esc / P | Back, Start |
 | Открыть, говорить, войти | ↑ / W | крестовина вверх |
 | В окнах: выбор / назад | Enter / Пробел / Z, Esc / Backspace / X | A, B |
+| В суме: выбросить | R / Delete | Y |
+| Во весь экран | F11 | |
 
 ## Проверка
 
@@ -140,6 +143,7 @@ godot --headless --path . res://tests/levels_test.tscn
 godot --headless --path . res://tests/combat_test.tscn
 godot --headless --path . res://tests/enemies_test.tscn
 godot --headless --path . res://tests/progress_test.tscn
+godot --headless --path . res://tests/ui_test.tscn
 ```
 - `smoke_test` — настройки, ввод, сохранение, ресурсы (`SMOKE OK`).
 - `movement_test` — движение героя кадр в кадр против Pyxel-версии
@@ -158,22 +162,34 @@ godot --headless --path . res://tests/progress_test.tscn
   Эталоны: `python tests/reference/make_progress_reference.py D:/путь/к/NordSagePixel`.
 - `levels_test` — тайлы сцен совпадают с картами, сундук, стела, табличка,
   разговор, монета, переходы город → тропа → курган → тропа → город (`LEVELS OK`).
+- `ui_test` — настоящими кадрами и нажатиями: главное меню → новая игра → сума
+  (надеть меч) → пауза (сохранить) → гибель (серебро остаётся на месте) → к месту
+  сохранения → подобрать серебро → конец пути → Велеград → переход с затемнением →
+  пауза → главное меню (`UI OK`).
 
 Снимок любой сцены (без `--headless`), можно с удержанием действий:
 ```
 godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shot.png --scene=res://scenes/world/world.tscn --level=arena --equip=weapon:sword,shield:shield_red --hold=block --frames=30
 godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/shop.png --scene=res://scenes/game.tscn --silver=120 --give=ore:3 --overlay=trade:smith:2
+godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/inv.png --scene=res://scenes/game.tscn --overlay=inventory --equip=helmet:shishak
+godot --path . res://tests/smoke_test.tscn -- --shot=C:/tmp/title.png --scene=res://scenes/game.tscn --title
 ```
+Окна для `--overlay`: `rest`, `npc:<id>`, `trade:<лавка>:<вкладка>`, `pause`, `inventory`,
+`controls`, `death`, `victory`.
 
-Главная сцена (F5) — `scenes/game.tscn`: новая игра в Велеграде. Работают сундуки,
+Главная сцена (F5) — `scenes/game.tscn`: главное меню (продолжить, новая игра,
+управление). В игре: Esc — привал (сума, сохранить, управление, выйти в меню),
+I — сума и снаряжение (надеть, снять, съесть, выбросить). Переходы между
+локациями — с затемнением. Павший герой роняет серебро на месте гибели (в
+сохранении его больше нет) — подбери, чтобы вернуть; экран смерти предлагает
+вернуться к месту сохранения. Выход из кургана — экран «Путь пройден». Работают сундуки,
 стела и рунные камни (сохранение), таблички, разговоры, монеты, переходы между
 локациями, весь бой героя, враги на «Лесной тропе» и в кургане, ярл Хрёрек
 (арена с решёткой, ярость и волки, награда после победы), добыча и опыт с убитых,
 чары рун (F — сотворить, E — сменить руну), припасы (Q), отдых у стелы и камней
 с распределением очков, торговцы (Торвальд, Млада, кузнец Добрыня) с лавками и
-заточкой оружия. Окна сумы и снаряжения пока нет — шаг 8.
+заточкой оружия.
 Чучела — у тренера в Велеграде и на «Ристалище» (`scenes/levels/arena.tscn`, F6).
-Погибший пока встаёт на старте (экран смерти — шаг 8).
 `scenes/debug/input_test.tscn` — проверка ввода.
 `scenes/debug/asset_gallery.tscn` (F6 в редакторе) — все перенесённые ресурсы:
 фон с параллаксом, постройки и объекты с анимацией, тайлы, иконки, шрифт.

@@ -116,13 +116,18 @@ func place(at: Vector2) -> void:
 
 
 func rebuild_look() -> void:
+	look.set_look(look_layers())
+
+
+## Слои облика героя по надетым доспеху и шлему (и для фигуры в окне сумы).
+static func look_layers() -> Array:
 	var armor := GameState.equipped("armor")
 	var helmet := GameState.equipped("helmet")
 	var layers := [["hero_legs", null], [ARMOR_SHEETS.get(armor, "hero_torso_plain"), null],
 			["hero_head_male", null]]
 	if HELMET_SHEETS.has(helmet):
 		layers.append([HELMET_SHEETS[helmet], null])
-	look.set_look(layers)
+	return layers
 
 
 func item(slot: String):

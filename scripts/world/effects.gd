@@ -6,6 +6,14 @@ const SIZE := 2.0
 
 ## [x, y, vx, vy, жизнь, цвет, тяжесть]
 var _parts := []
+## Эффекты из листов (FxSheets): [имя, x, y, отражён, возраст, скорость, за кем следует]
+var _sheets := []
+
+
+## Разовый эффект из листа. follow — объект с x, y, w, h: эффект едет за его ногами.
+func play(name: String, x: float, y: float, flip := false, speed := 0.0, follow: Object = null) -> void:
+	if FxSheets.has(name):
+		_sheets.append([name, x, y, flip, 0, speed, follow])
 
 
 func dust(x: float, y: float, n := 5) -> void:
@@ -57,9 +65,17 @@ func tick() -> void:
 		p[3] += p[6]
 		p[4] -= 1
 	_parts = _parts.filter(func(p): return p[4] > 0)
+	for s in _sheets:
+		s[4] += 1
+		if s[6] != null and is_instance_valid(s[6]):
+			s[1] = s[6].x + s[6].w / 2
+			s[2] = s[6].y + s[6].h
+	_sheets = _sheets.filter(func(s): return s[4] < FxSheets.length(s[0], s[5]))
 	queue_redraw()
 
 
 func _draw() -> void:
+	for s in _sheets:
+		FxSheets.draw(self, s[0], Vector2(s[1], s[2]), s[4], s[3], s[5])
 	for p in _parts:
 		draw_rect(Rect2(floorf(p[0]), floorf(p[1]), SIZE, SIZE), p[5])

@@ -10,6 +10,8 @@ extends Node
 ##   [--overlay=rest | npc:merchant | trade:smith:2 | pause | inventory | controls | death | victory]
 ##     — для game.tscn: открыть окно перед снимком
 ##   [--title]  — для game.tscn: остаться в главном меню (по умолчанию — новая игра)
+##   [--fx=1]  — эффекты pixelfx в масштабе x1 (по умолчанию x2); [--weather=snow] — снег на любом уровне
+##   [--stun]  — оглушить всех врагов перед снимком; [--at=150] — поставить героя на x=150
 
 var failures: Array[String] = []
 
@@ -147,6 +149,9 @@ func _screenshot(path: String) -> void:
 	_expect(packed != null, "сцена не загрузилась: " + scene)
 	if packed == null:
 		return
+	if _arg("fx"):
+		FxSheets.scale = int(_arg("fx"))
+	World.weather_override = _arg("weather")
 	var node := packed.instantiate()
 	if node is World and _arg("level"):
 		node.level_name = _arg("level")
@@ -165,6 +170,12 @@ func _screenshot(path: String) -> void:
 		GameState.inv.add(pair.get_slice(":", 0), int(pair.get_slice(":", 1)))
 	GameState.inv.silver += int(_arg("silver"))
 	GameState.inv.add_xp(int(_arg("xp")))
+	var world = node if node is World else node.get("world")
+	if _flag("stun") and world:
+		for e in world.enemies:
+			e.stun_t = 100000
+	if _arg("at") and world:
+		world.player.place(Vector2(float(_arg("at")), world.player.y + world.player.h))
 	var hold := {}
 	for a in _arg("hold").split(",", false):
 		hold[a] = true

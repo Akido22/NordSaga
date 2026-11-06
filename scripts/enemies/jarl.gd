@@ -130,7 +130,8 @@ func take_hit(dmg: int, direction: int, world, heavy := false, _plunge := false)
 	hp -= dmg
 	flash = 6
 	world.float_text(cx, y - 8, str(dmg), Pal.SNOW if crit else Pal.GOLD)
-	world.sparks(cx - direction * 12, y + 24, 12 if crit or heavy else 6)
+	world.effects.play("hit", cx - direction * 12, y + h, direction < 0)
+	world.sparks(cx - direction * 12, y + 24, 6 if crit or heavy else 2)
 	world.freeze(7 if crit else 5 if heavy else 3)
 	if crit or heavy:
 		world.shake(3)

@@ -96,7 +96,8 @@ func take_hit(dmg: int, direction: int, world, heavy := false, plunge := false) 
 	if crit:
 		world.float_text(cx, y - 24, "КРИТ!", Pal.GOLD)
 	world.float_text(cx, y - 8, str(dmg), Pal.SNOW if crit else Pal.GOLD)
-	world.sparks(cx - direction * 6, cy, 12 if crit or heavy else 6)
+	world.effects.play("hit", cx - direction * 6, y + h, direction < 0)
+	world.sparks(cx - direction * 6, cy, 6 if crit or heavy else 2)
 	world.freeze(7 if crit else 5 if heavy else 3)
 	if crit or heavy:
 		world.shake(3)
@@ -181,7 +182,9 @@ func _draw_fx() -> void:
 
 ## Звёздочки над оглушённым; dy — высота над макушкой хитбокса.
 func draw_status(c: CanvasItem, dy: float) -> void:
-	if stun_t > 0:
+	if stun_t > 0 and FxSheets.has("stunned"):
+		FxSheets.draw(c, "stunned", Vector2(w / 2, dy + 12), Engine.get_physics_frames())
+	elif stun_t > 0:
 		var t := Engine.get_physics_frames()
 		for i in 3:
 			var a := t * 0.15 + i * 2.1

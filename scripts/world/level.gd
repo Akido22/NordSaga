@@ -17,6 +17,7 @@ enum Kind { EMPTY, SOLID, PLATFORM, SPIKES }
 @export var subtitle := ""
 @export_enum("forest", "town", "barrow") var sky := "forest"
 @export_enum("forest", "town", "boss") var music := "forest"
+@export_enum("none", "snow") var weather := "none"  # погода поверх уровня (Weather)
 ## Размер карты в тайлах: края по горизонтали — стена, ниже низа — пропасть.
 @export var size_tiles := Vector2i(32, 24)
 ## Арена босса: boss (id), arena_trigger (столбец), arena_door [столбец, строка от, до], boss_chest «столбец,строка».

@@ -1,0 +1,80 @@
+{
+ "slash": {
+  "source": "melee/sword-slash",
+  "fps": 30,
+  "loop": false,
+  "speed": 1.5,
+  "x1": {
+   "w": 196,
+   "h": 164,
+   "frames": 24,
+   "cols": 8,
+   "pivot": [
+    74,
+    122
+   ]
+  },
+  "x2": {
+   "w": 272,
+   "h": 208,
+   "frames": 24,
+   "cols": 8,
+   "pivot": [
+    88,
+    184
+   ]
+  }
+ },
+ "hit": {
+  "source": "impacts/hit-spark",
+  "fps": 30,
+  "loop": false,
+  "speed": 1,
+  "x1": {
+   "w": 136,
+   "h": 80,
+   "frames": 16,
+   "cols": 8,
+   "pivot": [
+    44,
+    64
+   ]
+  },
+  "x2": {
+   "w": 272,
+   "h": 160,
+   "frames": 16,
+   "cols": 8,
+   "pivot": [
+    88,
+    128
+   ]
+  }
+ },
+ "stunned": {
+  "source": "status/stunned",
+  "fps": 30,
+  "loop": true,
+  "speed": 1,
+  "x1": {
+   "w": 108,
+   "h": 112,
+   "frames": 60,
+   "cols": 8,
+   "pivot": [
+    54,
+    16
+   ]
+  },
+  "x2": {
+   "w": 120,
+   "h": 128,
+   "frames": 60,
+   "cols": 8,
+   "pivot": [
+    60,
+    36
+   ]
+  }
+ }
+}

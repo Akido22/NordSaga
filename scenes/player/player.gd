@@ -44,6 +44,7 @@ var anim_t := 0
 var attack_kind := ""  # light, heavy, air, plunge
 var attack_t := 0
 var attack_dur := 1
+var slash_shown := false  # след клинка (лист slash) уже запущен
 var combo := 0
 var queued := 0  # сколько ударов серии ждут своей очереди
 var charge := 0
@@ -392,6 +393,7 @@ func _start_attack(world, kind: String) -> void:
 	var cost: int = {"heavy": heavy_cost, "plunge": plunge_cost}.get(kind, int(wpn.get("stamina", 8)))
 	spend(cost)
 	attack_kind = kind
+	slash_shown = false
 	hit_ids.clear()
 	if kind != "light" or combo == 0:
 		queued = 0
@@ -450,6 +452,9 @@ func _st_attack(world, direction: int) -> void:
 		_walk(direction, 0.45 if attack_kind == "light" else 0.2, false)
 	else:
 		_walk(direction, 1.0, false)
+	if not slash_shown and attack_progress() >= (0.25 if attack_kind == "heavy" else 0.0):
+		slash_shown = true
+		world.effects.play("slash", cx, y + h, facing < 0, 1.0 if attack_kind == "heavy" else 0.0, self)
 	if attack_active():
 		var b := attack_box()
 		_hit_box(world, b[0], b[1], b[2], b[3])
@@ -664,7 +669,7 @@ func sync() -> void:
 func _draw_fx() -> void:
 	var f := frame()
 	var wpn = item("weapon")
-	if attack_active() and wpn != null:
+	if attack_active() and wpn != null and not FxSheets.has("slash"):
 		_draw_slash(f)
 	if state == "stun" and state_t > 14:
 		_draw_stun_stars()

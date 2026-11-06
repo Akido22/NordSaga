@@ -98,6 +98,14 @@ python tools/export_for_godot.py D:/ProgramFiles/ProjectDir/godot/NordSaga/nord-
 низ-левый угол тайла в уровне. Новый рисунок с тем же именем и описанием
 подменяет старый без правки кода.
 
+### Эффекты — из pixelfx
+
+Взмах меча, искры попадания, звёздочки оглушения — листы из
+[pixelfx](https://github.com/patch-gg/pixelfx) (MIT), перекрашенные под палитру:
+`node tools/export_fx.mjs <клон pixelfx>` -> `assets/fx` (см. `assets/fx/README.md`).
+Играет `Effects.play` / `FxSheets`. Снег — `scripts/world/weather.gd`, у уровня
+`weather = "snow"`. Эффекты только для вида: на хитбоксы и сверку с Pyxel не влияют.
+
 ### Герой — из LibreSprite / Aseprite
 
 Герой рисуется в `art/hero/hero.aseprite` (формат Aseprite, проверен и с LibreSprite 1.3;

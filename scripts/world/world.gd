@@ -31,6 +31,7 @@ var t := 0
 var level: Level
 var player: Player
 var effects: Effects
+var weather: Weather = null
 var camera: Camera2D
 var hud: CanvasLayer
 var cam := Vector2.ZERO
@@ -67,6 +68,7 @@ var exit_to = null
 var finished := false
 var ui_request = null  # [вид, объект] — окно, которое надо открыть после кадра
 var lost_pile: LostSilver = null  # серебро, оброненное при прошлой гибели
+static var weather_override := ""  # погода для всех уровней (проверка эффектов)
 
 var _overlay: Node2D  # подсказки и надписи в мире — поверх всего
 
@@ -95,6 +97,10 @@ func _ready() -> void:
 	effects = Effects.new()
 	effects.z_index = 20
 	add_child(effects)
+	if (weather_override if weather_override else level.weather) == "snow":
+		weather = Weather.new()
+		weather.z_index = 30
+		add_child(weather)
 	_overlay = Node2D.new()
 	_overlay.z_index = 50
 	_overlay.draw.connect(_draw_overlay)
@@ -294,6 +300,8 @@ func _sync() -> void:
 	get_node("ArenaDoor").queue_redraw()
 	var jitter := randi_range(-1, 1) * mini(2, shake_t) * 2 if shake_t > 0 else 0
 	camera.position = Vector2(int(cam.x) + jitter, int(cam.y))
+	if weather:
+		weather.tick(camera.position)
 	_overlay.queue_redraw()
 
 

@@ -5,9 +5,10 @@
 Каждый слой из hero_rig.SHEETS становится листом PNG (кадры по 8 в ряд), метки —
 анимациями, слой anchors — точками кисти, спины и головы (по пикселю цвета из
 hero_rig.MARKERS), текст ячейки anchors «weapon=30» или «weapon=-» — углом оружия.
-Лист может быть и группой слоёв с таким именем: тогда склеиваются её видимые
-слои (кроме «_»-слоёв). Слои, чьи имена начинаются с «_», и неизвестные слои
-пропускаются.
+Лист можно разбить на слои «legs-контур», «legs-заливка» (всё, что до «-», — имя
+листа): они склеиваются снизу вверх. Так же и группа слоёв с именем листа (Aseprite):
+склеиваются её видимые слои, кроме «_»-слоёв. Слои, чьи имена начинаются с «_»,
+и неизвестные слои пропускаются.
 Если чего-то не хватает, импорт останавливается и объясняет, что исправить.
 """
 
@@ -47,17 +48,20 @@ def main():
                 if not child.group and child.visible and not child.name.startswith("_"):
                     kids.append(j)
             layers[layer.name] = kids
+    seen = set(layers)
     for i, layer in enumerate(spr.layers):
         if layer.group or layer.name.startswith("_") or i in inside:
             continue
-        if layer.name in known:
-            if layer.name in layers:
-                errors.append(f"лист «{layer.name}» встречается дважды")
-            layers[layer.name] = [i]
+        sheet = layer.name.split("-", 1)[0]  # «legs-контур» — часть листа legs
+        if sheet in known:
+            if layer.name in seen:
+                errors.append(f"слой «{layer.name}» встречается дважды")
+            seen.add(layer.name)
+            layers.setdefault(sheet, []).append(i)
+            if layer.opacity < 255:
+                notes.append(f"у слоя «{layer.name}» прозрачность {layer.opacity} — в игре будет непрозрачным")
         elif layer.name != ANCHORS_LAYER:
             notes.append(f"слой «{layer.path}» не нужен игре — пропущен")
-        if layer.opacity < 255 and layer.name in known:
-            notes.append(f"у слоя «{layer.name}» прозрачность {layer.opacity} — в игре будет непрозрачным")
     for name in REQUIRED:
         if name not in layers:
             errors.append(f"нет слоя «{name}»")
